@@ -6,7 +6,7 @@
 |---|---|---|---|
 | 0 — Descubrimiento | PRD, arquitectura, amenazas, ERD, ADR, backlog | ✅ | Documentos en `docs/` |
 | 1 — Fundaciones | Proyecto ejecutable, PostgreSQL + RLS, empresas, usuarios, Google OIDC, MFA TOTP, RBAC, auditoría, CI | ✅ (ver pendientes) | Pruebas de aislamiento y auth en verde ✅ |
-| 2 — Inventario | Unidades, Kardex, movimientos, saldos, lotes, FEFO, vencimientos, conteos | ⏳ siguiente | Concurrencia e invariantes en verde |
+| 2 — Inventario | Unidades, Kardex, movimientos, saldos, lotes, FEFO, vencimientos, conteos | ✅ (v0.4.0) | Concurrencia e invariantes en verde ✅ |
 | 3 — Compras y localización | Proveedores, OC, recepción, VES/USD, tasas auditadas, alertas | ⏳ | E2E de compras y precisión monetaria |
 | 4 — Comercialización | Landing completa, onboarding con plan, cobro/conciliación, superadmin | ⏳ (límites ✅) | Onboarding y límites E2E |
 | 5 — Producción | Reportes, exportaciones, observabilidad, rendimiento, seguridad, despliegue | ⏳ | Checklist de go-live |
@@ -37,7 +37,7 @@
 |---|---|---|---|
 | 1 | Dos empresas con mismo SKU no ven ni modifican datos entre sí | ✅ | `tests/integration/tenant-isolation.test.ts` |
 | 2 | Usuario de dos empresas solo actúa en el contexto autorizado | ✅ | `tenant-isolation.test.ts` ("Usuario con membresía en dos empresas") |
-| 3 | Usuario sin permiso no ajusta existencias ni cambia tasas | 🟡 | Matriz verificada (`rbac.test.ts`); servicios de ajuste (F2) y tasas (F3) aún no existen — se repetirá a nivel de servicio |
+| 3 | Usuario sin permiso no ajusta existencias ni cambia tasas | 🟡 | Ajustes ✅ a nivel de servicio (`inventory.test.ts`); tasas: matriz verificada, el servicio llega en F3 |
 | 4 | Recepciones repetidas con la misma clave de idempotencia no duplican stock | ⏳ F2/F3 | — |
 | 5 | Dos salidas simultáneas no producen stock negativo indebido | ⏳ F2 | — |
 | 6 | FEFO elige lote correcto y excluye vencidos/cuarentena | ⏳ F2 | — |
@@ -48,7 +48,17 @@
 | 11 | Exportaciones y jobs no filtran datos entre empresas | 🟡 | Jobs ✅ (`jobs.test.ts`); exportaciones no existen aún (F5) |
 | 12 | Backup se restaura exitosamente en entorno de prueba | ✅ (local) | `scripts/db/backup-restore-test.sh`; paso en CI |
 
-## Backlog priorizado — Fase 2 (propuesta)
+## Fase 2 — entregado (v0.4.0)
+
+Unidades y presentaciones, códigos de barra, libro de movimientos inmutable, saldos sin negativos con
+concurrencia, idempotencia, reversos, lotes con estados y vencimientos, FEFO, costo promedio, ajustes y mermas con
+aprobación, conteos con aprobación, transferencias, Kardex, lotes por vencer y tablero.
+
+Pendiente de la Fase 2 original (pasa a F3/F5): importación CSV de productos, variantes de producto, categorías y
+marcas, imágenes, reservas de stock (el campo existe; aún no hay flujo que reserve), job que marque lotes
+vencidos como `EXPIRED` (hoy el vencimiento se evalúa por fecha en cada operación).
+
+## Backlog de la Fase 2 (propuesta original, como referencia)
 
 | Prioridad | Historia | Criterio de aceptación |
 |---|---|---|

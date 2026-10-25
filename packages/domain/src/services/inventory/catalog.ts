@@ -191,3 +191,49 @@ export async function setLotStatus(
     return updated;
   });
 }
+
+/** Opciones para formularios: productos activos con sus presentaciones (máx. 2000). */
+export async function listProductOptions(actor: TenantActor) {
+  assertPermission(actor, "products.read");
+  return withTenant(actor.tenantId, actor.userId, async (tx) => {
+    const rows = await tx.product.findMany({
+      where: { tenantId: actor.tenantId, status: "ACTIVE" },
+      select: { id: true, sku: true, name: true, baseUnit: true, lotTracking: true, requiresExpiry: true, units: { select: { code: true, factorToBase: true } } },
+      orderBy: { sku: "asc" },
+      take: 2000,
+    });
+    return rows.map((r) => ({
+      id: r.id,
+      sku: r.sku,
+      name: r.name,
+      baseUnit: r.baseUnit,
+      lotTracking: r.lotTracking,
+      requiresExpiry: r.requiresExpiry,
+      units: r.units.map((u) => ({ code: u.code, factor: u.factorToBase.toString() })),
+    }));
+  });
+}
+
+export type ProductOption = Awaited<ReturnType<typeof listProductOptions>>[number];
+
+/** Resuelve un número de lote del producto a su id (o null si no se indicó). */
+export async function resolveLotId(actor: TenantActor, productId: string, lotNumber: string | undefined | null) {
+  const n = lotNumber?.trim();
+  if (!n) return null;
+  return withTenant(actor.tenantId, actor.userId, async (tx) => {
+    const lot = await tx.lot.findUnique({ where: { tenantId_productId_lotNumber: { tenantId: actor.tenantId, productId, lotNumber: n } } });
+    if (!lot) throw notFound(`No existe el lote ${n} para este producto.`);
+    return lot.id;
+  });
+}
+
+export async function listWarehouses(actor: TenantActor) {
+  assertPermission(actor, "inventory.read");
+  return withTenant(actor.tenantId, actor.userId, (tx) =>
+    tx.warehouse.findMany({
+      where: { tenantId: actor.tenantId, active: true, ...(actor.branchIds.length ? { branchId: { in: [...actor.branchIds] } } : {}) },
+      select: { id: true, code: true, name: true, branch: { select: { name: true } } },
+      orderBy: { code: "asc" },
+    }),
+  );
+}

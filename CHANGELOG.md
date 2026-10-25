@@ -2,6 +2,24 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versionado semántico.
 
+## [0.4.0] — 2026-10-26 — Fase 2: inventario
+
+### Añadido
+- Unidades base (UND, KG, G, L, ML, M, CM) con conversión exacta por dimensión y presentaciones por producto
+  (CAJA, BULTO…); códigos de barra con validación EAN/UPC; búsqueda por SKU o código (lector USB).
+- Libro de inventario: movimientos de solo inserción, saldos por almacén y lote sin negativos ante operaciones
+  simultáneas, claves de idempotencia (doble clic o reenvío no duplican), reversos auditados, Kardex con saldo.
+- Lotes con vencimiento y estados (cuarentena, dañado, retirado); despacho FEFO que excluye vencidos y bloqueados;
+  vista de lotes por vencer a 7/15/30/60/90 días con valor.
+- Costo promedio ponderado e inventario valorizado.
+- Ajustes y mermas con aprobación de otro usuario sobre el umbral; conteos físicos con aprobación.
+- Transferencias entre almacenes (borrador → enviada → recibida, cancelación con retorno), plan Profesional+.
+- Tablero de inicio con stock bajo, lotes por vencer, valor del inventario, ajustes pendientes y últimas operaciones.
+
+### Corregido
+- Formularios: tras un envío exitoso se reconstruyen completos (antes un selector podía mostrar un valor distinto
+  del que se enviaba). Mensajes de validación en español.
+
 ## [0.3.0] — 2026-10-25
 
 ### Añadido

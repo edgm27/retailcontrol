@@ -39,7 +39,7 @@ test("propietario: registro → empresa → MFA obligatorio → recuperación �
 
   // 3. Dentro de la empresa.
   await expect(page.getByTestId("active-tenant")).toContainText("Abastos E2E · Propietario");
-  await page.getByRole("link", { name: "Productos" }).click();
+  await page.getByRole("link", { name: "Productos", exact: true }).click();
   await page.getByLabel("SKU", { exact: true }).fill("harina-1kg");
   await page.getByLabel("Nombre", { exact: true }).fill("Harina 1 kg");
   await page.getByRole("button", { name: "Crear producto" }).click();

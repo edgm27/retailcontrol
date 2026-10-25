@@ -25,15 +25,17 @@ erDiagram
   TENANT ||--o{ PRODUCT : "SKU único por empresa"
   TENANT ||--o{ AUDIT_EVENT : "solo inserción"
 
-  PRODUCT ||--o{ PRODUCT_UNIT : "🟡 F2"
-  PRODUCT ||--o{ PRODUCT_BARCODE : "🟡 F2"
-  PRODUCT ||--o{ LOT : "🟡 F2"
-  WAREHOUSE ||--o{ STOCK_BALANCE : "🟡 F2"
-  LOT ||--o{ STOCK_BALANCE : "🟡 F2"
-  STOCK_MOVEMENT }o--|| PRODUCT : "🟡 F2"
-  STOCK_MOVEMENT }o--|| WAREHOUSE : "🟡 F2"
-  STOCK_MOVEMENT }o--o| LOT : "🟡 F2"
-  STOCK_COUNT ||--o{ STOCK_COUNT_LINE : "🟡 F2"
+  PRODUCT ||--o{ PRODUCT_UNIT : "presentaciones"
+  PRODUCT ||--o{ PRODUCT_BARCODE : "código único por empresa"
+  PRODUCT ||--o{ LOT : "lote único por producto"
+  WAREHOUSE ||--o{ STOCK_BALANCE : "saldo por almacén/lote"
+  LOT ||--o{ STOCK_BALANCE : ""
+  STOCK_MOVEMENT }o--|| PRODUCT : "solo inserción"
+  STOCK_MOVEMENT }o--|| WAREHOUSE : ""
+  STOCK_MOVEMENT }o--o| LOT : ""
+  STOCK_ADJUSTMENT }o--|| PRODUCT : "aprobación"
+  STOCK_COUNT ||--o{ STOCK_COUNT_LINE : "conteo"
+  TRANSFER ||--o{ TRANSFER_LINE : "borrador→enviada→recibida"
   TENANT ||--o{ SUPPLIER : "🟡 F3"
   SUPPLIER ||--o{ PURCHASE_ORDER : "🟡 F3"
   PURCHASE_ORDER ||--o{ PURCHASE_ORDER_LINE : "🟡 F3"
@@ -79,7 +81,15 @@ erDiagram
 
 ## 4. Diseño de las fases siguientes (para revisión)
 
-### Fase 2 — Inventario como libro
+### Fase 2 — Inventario como libro (✅ implementado en v0.4.0; diseño original abajo)
+
+Tablas: `product_units`, `product_barcodes`, `lots`, `stock_movements` (solo inserción + trigger),
+`stock_balances` (`lot_key` = coalesce(lot_id, uuid cero) para unicidad con "sin lote"), `idempotency_keys`,
+`stock_adjustments`, `stock_counts`, `stock_count_lines`, `transfers`, `transfer_lines`. Todas con RLS forzado.
+Invariantes adicionales en BD: trigger `app.assert_lot_matches` (un lote referenciado pertenece a la misma
+empresa y producto), CHECK de cantidades (≠ 0, > 0, contado ≥ 0), unidad base válida, vencimiento ⇒ lotes,
+transferencia entre almacenes distintos. Diferencias respecto del diseño: las reservas existen como campo pero
+sin flujo aún; el vencimiento se evalúa por fecha (zona de la empresa) en cada operación en lugar de un job.
 
 - `product_units (tenant_id, product_id, unit_code, factor_to_base DECIMAL(20,6), dimension)` con validación
   dimensional (masa, volumen, longitud, unidad). Conversión solo dentro de la misma dimensión; factores exactos.

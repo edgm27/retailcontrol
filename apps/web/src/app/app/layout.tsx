@@ -7,7 +7,12 @@ import { signOutAction } from "./actions";
 
 const NAV: { href: string; label: string; permission?: Permission }[] = [
   { href: "/app", label: "Inicio" },
+  { href: "/app/inventario", label: "Inventario", permission: "inventory.read" },
   { href: "/app/productos", label: "Productos", permission: "products.read" },
+  { href: "/app/lotes", label: "Lotes", permission: "inventory.read" },
+  { href: "/app/ajustes", label: "Ajustes", permission: "inventory.read" },
+  { href: "/app/conteos", label: "Conteos", permission: "inventory.read" },
+  { href: "/app/transferencias", label: "Transferencias", permission: "inventory.read" },
   { href: "/app/configuracion/sucursales", label: "Sucursales", permission: "branches.read" },
   { href: "/app/configuracion/usuarios", label: "Usuarios", permission: "members.read" },
   { href: "/app/auditoria", label: "Auditoría", permission: "audit.read" },

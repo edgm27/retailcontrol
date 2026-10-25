@@ -45,3 +45,19 @@ export async function freshTotp(secret: string): Promise<string> {
   lastStep = step;
   return generateSync({ secret });
 }
+
+/** Registra un propietario nuevo con empresa y MFA activo. Devuelve el secreto TOTP. */
+export async function signUpOwner(page: Page, company: string): Promise<{ email: string; secret: string }> {
+  const email = uniqueEmail("e2e.owner");
+  await loginWithMagicLink(page, email);
+  await expect(page).toHaveURL(/\/onboarding/);
+  await page.getByLabel("Nombre comercial").fill(company);
+  await page.getByRole("button", { name: "Crear empresa" }).click();
+  await expect(page).toHaveURL(/\/mfa\/configurar/);
+  const secret = (await page.getByTestId("totp-secret").getAttribute("data-secret"))!;
+  await page.getByLabel("Código de 6 dígitos de su app").fill(await freshTotp(secret));
+  await page.getByRole("button", { name: "Activar verificación" }).click();
+  await page.getByRole("link", { name: "Ya guardé mis códigos, continuar" }).click();
+  await expect(page.getByTestId("active-tenant")).toContainText(company);
+  return { email, secret };
+}
