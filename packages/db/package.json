@@ -23,6 +23,6 @@
     "@rc/config": "workspace:*",
     "dotenv-cli": "11.0.0",
     "prisma": "6.19.3",
-    "tsx": "4.20.6"
+    "tsx": "4.23.15"
   }
 }
