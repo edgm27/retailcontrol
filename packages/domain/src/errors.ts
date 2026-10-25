@@ -13,7 +13,8 @@ export type DomainErrorCode =
   | "RATE_LIMITED"
   | "MFA_REQUIRED"
   | "MFA_INVALID"
-  | "MFA_LOCKED";
+  | "MFA_LOCKED"
+  | "INSUFFICIENT_STOCK";
 
 export class DomainError extends Error {
   readonly code: DomainErrorCode;
@@ -40,6 +41,9 @@ export const readOnly = (
 ) => new DomainError("READ_ONLY", msg);
 export const rateLimited = (msg = "Demasiados intentos. Intente de nuevo más tarde.") =>
   new DomainError("RATE_LIMITED", msg);
+
+export const insufficientStock = (msg = "Existencia insuficiente para esta operación.", details?: Record<string, unknown>) =>
+  new DomainError("INSUFFICIENT_STOCK", msg, details);
 
 export function isDomainError(e: unknown): e is DomainError {
   return e instanceof DomainError;

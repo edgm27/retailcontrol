@@ -1,4 +1,7 @@
 import { z } from "zod";
+
+// Mensajes de validación en español para toda la aplicación.
+z.config(z.locales.es());
 import { TENANT_ROLES } from "../rbac";
 import { normalizeRif } from "./rif";
 
@@ -57,9 +60,18 @@ export const skuSchema = z
   .toUpperCase()
   .regex(/^[A-Z0-9][A-Z0-9._\-/]{0,63}$/, "SKU: letras, números y . _ - /; máx. 64");
 
+const optionalDecimalText = z
+  .union([z.string(), z.number()])
+  .optional()
+  .transform((v) => (v === undefined || v === "" ? undefined : String(v)));
+
 export const createProductSchema = z.object({
   sku: skuSchema,
   name: trimmed(2, 200),
+  baseUnit: z.enum(["UND", "KG", "G", "L", "ML", "M", "CM"]).default("UND"),
+  lotTracking: z.boolean().default(false),
+  requiresExpiry: z.boolean().default(false),
+  minStock: optionalDecimalText,
 });
 
 export const totpCodeSchema = z

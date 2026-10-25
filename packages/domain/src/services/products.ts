@@ -2,6 +2,7 @@ import { Prisma, withTenant } from "@rc/db";
 import { conflict, notFound } from "../errors";
 import { assertPermission } from "../rbac";
 import { createProductSchema } from "../validation/schemas";
+import { parseQuantity } from "../units";
 import { recordAudit } from "./audit";
 import { assertTenantWritable } from "./entitlements";
 import type { TenantActor } from "./types";
@@ -11,9 +12,19 @@ import type { TenantActor } from "./types";
  * códigos de barra, variantes, categorías, precios e importación CSV.
  * Los productos no se borran: se inactivan para preservar el historial.
  */
-export async function createProduct(actor: TenantActor, input: { sku: string; name: string }) {
+export async function createProduct(
+  actor: TenantActor,
+  input: { sku: string; name: string; baseUnit?: string; lotTracking?: boolean; requiresExpiry?: boolean; minStock?: string | number },
+) {
   assertPermission(actor, "products.write");
-  const data = createProductSchema.parse(input);
+  const parsed = createProductSchema.parse(input);
+  const data = {
+    ...parsed,
+    // Exigir vencimiento implica manejar lotes.
+    lotTracking: parsed.lotTracking || parsed.requiresExpiry,
+    minStock: parsed.minStock !== undefined ? parseQuantity(parsed.minStock) : null,
+  };
+  if (data.minStock && data.minStock.lessThan(0)) throw conflict("El stock mínimo no puede ser negativo.");
   return withTenant(actor.tenantId, actor.userId, async (tx) => {
     await assertTenantWritable(tx, actor.tenantId);
     try {

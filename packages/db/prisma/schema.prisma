@@ -28,18 +28,18 @@ enum PlatformRole {
 }
 
 model User {
-  id            String       @id @default(uuid()) @db.Uuid
-  name          String?
-  email         String       @unique
-  emailVerified DateTime?    @map("email_verified")
-  image         String?
-  platformRole  PlatformRole @default(NONE) @map("platform_role")
+  id                String       @id @default(uuid()) @db.Uuid
+  name              String?
+  email             String       @unique
+  emailVerified     DateTime?    @map("email_verified")
+  image             String?
+  platformRole      PlatformRole @default(NONE) @map("platform_role")
   // Hash scrypt de la contraseña (null = solo acceso por Google / enlace mágico).
-  passwordHash      String?   @map("password_hash")
-  passwordChangedAt DateTime? @map("password_changed_at")
-  disabledAt    DateTime?    @map("disabled_at")
-  createdAt     DateTime     @default(now()) @map("created_at")
-  updatedAt     DateTime     @updatedAt @map("updated_at")
+  passwordHash      String?      @map("password_hash")
+  passwordChangedAt DateTime?    @map("password_changed_at")
+  disabledAt        DateTime?    @map("disabled_at")
+  createdAt         DateTime     @default(now()) @map("created_at")
+  updatedAt         DateTime     @updatedAt @map("updated_at")
 
   accounts      Account[]
   sessions      Session[]
@@ -296,8 +296,8 @@ model Branch {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  tenant            Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  warehouses        Warehouse[]
+  tenant             Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  warehouses         Warehouse[]
   membershipBranches MembershipBranch[]
 
   @@unique([tenantId, code])
@@ -315,9 +315,15 @@ model Warehouse {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant        Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   // FK compuesta: el almacén solo puede colgar de una sucursal de su misma empresa.
-  branch Branch @relation(fields: [tenantId, branchId], references: [tenantId, id], onDelete: Restrict)
+  branch        Branch            @relation(fields: [tenantId, branchId], references: [tenantId, id], onDelete: Restrict)
+  movements     StockMovement[]
+  balances      StockBalance[]
+  adjustments   StockAdjustment[]
+  counts        StockCount[]
+  transfersFrom Transfer[]        @relation("TransferFrom")
+  transfersTo   Transfer[]        @relation("TransferTo")
 
   @@unique([tenantId, code])
   @@unique([tenantId, id])
@@ -333,20 +339,314 @@ enum ProductStatus {
 }
 
 model Product {
-  id        String        @id @default(uuid()) @db.Uuid
-  tenantId  String        @map("tenant_id") @db.Uuid
-  sku       String
-  name      String
-  status    ProductStatus @default(ACTIVE)
-  createdAt DateTime      @default(now()) @map("created_at")
-  updatedAt DateTime      @updatedAt @map("updated_at")
+  id             String        @id @default(uuid()) @db.Uuid
+  tenantId       String        @map("tenant_id") @db.Uuid
+  sku            String
+  name           String
+  status         ProductStatus @default(ACTIVE)
+  // Unidad base (código del catálogo de unidades en packages/domain/src/units.ts).
+  baseUnit       String        @default("UND") @map("base_unit")
+  lotTracking    Boolean       @default(false) @map("lot_tracking")
+  requiresExpiry Boolean       @default(false) @map("requires_expiry")
+  minStock       Decimal?      @map("min_stock") @db.Decimal(20, 6)
+  // Costo promedio ponderado en la moneda base de la empresa (valoración).
+  avgCost        Decimal       @default(0) @map("avg_cost") @db.Decimal(20, 6)
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
 
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant        Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  units         ProductUnit[]
+  barcodes      ProductBarcode[]
+  lots          Lot[]
+  movements     StockMovement[]
+  balances      StockBalance[]
+  adjustments   StockAdjustment[]
+  countLines    StockCountLine[]
+  transferLines TransferLine[]
 
   @@unique([tenantId, sku])
   @@unique([tenantId, id])
   @@index([tenantId, name])
   @@map("products")
+}
+
+// ─────────────────────────────── Inventario (Fase 2) ─────────────────────────
+// Reglas: los movimientos son de solo inserción; los saldos se actualizan en la
+// misma transacción con UPDATE condicional (sin negativos salvo política); las
+// cantidades se guardan en la UNIDAD BASE del producto.
+
+model ProductUnit {
+  id           String   @id @default(uuid()) @db.Uuid
+  tenantId     String   @map("tenant_id") @db.Uuid
+  productId    String   @map("product_id") @db.Uuid
+  // Presentación (CAJA, BULTO, PAQ…): cuántas unidades base contiene.
+  code         String
+  name         String
+  factorToBase Decimal  @map("factor_to_base") @db.Decimal(20, 6)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  product Product @relation(fields: [tenantId, productId], references: [tenantId, id], onDelete: Cascade)
+
+  @@unique([tenantId, productId, code])
+  @@map("product_units")
+}
+
+model ProductBarcode {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  productId String   @map("product_id") @db.Uuid
+  code      String
+  // Unidad que representa el código (UND por defecto, o una presentación).
+  unitCode  String?  @map("unit_code")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  product Product @relation(fields: [tenantId, productId], references: [tenantId, id], onDelete: Cascade)
+
+  @@unique([tenantId, code])
+  @@index([tenantId, productId])
+  @@map("product_barcodes")
+}
+
+enum LotStatus {
+  AVAILABLE
+  QUARANTINE
+  DAMAGED
+  RECALLED
+  EXPIRED
+  DEPLETED
+}
+
+model Lot {
+  id             String    @id @default(uuid()) @db.Uuid
+  tenantId       String    @map("tenant_id") @db.Uuid
+  productId      String    @map("product_id") @db.Uuid
+  lotNumber      String    @map("lot_number")
+  expiresAt      DateTime? @map("expires_at") @db.Date
+  manufacturedAt DateTime? @map("manufactured_at") @db.Date
+  receivedAt     DateTime  @default(now()) @map("received_at")
+  status         LotStatus @default(AVAILABLE)
+  supplierName   String?   @map("supplier_name")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  product   Product         @relation(fields: [tenantId, productId], references: [tenantId, id], onDelete: Restrict)
+  movements StockMovement[]
+  balances  StockBalance[]
+
+  @@unique([tenantId, productId, lotNumber])
+  @@unique([tenantId, id])
+  @@index([tenantId, expiresAt])
+  @@map("lots")
+}
+
+enum MovementType {
+  RECEIPT
+  ISSUE
+  RETURN_IN
+  RETURN_OUT
+  ADJUSTMENT_IN
+  ADJUSTMENT_OUT
+  WASTE
+  TRANSFER_OUT
+  TRANSFER_IN
+  COUNT_ADJUSTMENT
+  REVERSAL
+}
+
+model StockMovement {
+  id                 String       @id @default(uuid()) @db.Uuid
+  tenantId           String       @map("tenant_id") @db.Uuid
+  // Agrupa los movimientos de una misma operación (p. ej. salida FEFO en varios lotes).
+  operationId        String       @map("operation_id") @db.Uuid
+  type               MovementType
+  warehouseId        String       @map("warehouse_id") @db.Uuid
+  productId          String       @map("product_id") @db.Uuid
+  lotId              String?      @map("lot_id") @db.Uuid
+  // Variación con signo en unidad base (+ entra, − sale).
+  quantity           Decimal      @db.Decimal(20, 6)
+  enteredQuantity    Decimal      @map("entered_quantity") @db.Decimal(20, 6)
+  enteredUnit        String       @map("entered_unit")
+  unitCost           Decimal?     @map("unit_cost") @db.Decimal(20, 6)
+  currency           Currency?
+  reason             String?
+  referenceType      String?      @map("reference_type")
+  referenceId        String?      @map("reference_id")
+  reversesMovementId String?      @unique @map("reverses_movement_id") @db.Uuid
+  actorUserId        String       @map("actor_user_id") @db.Uuid
+  createdAt          DateTime     @default(now()) @map("created_at")
+
+  warehouse Warehouse @relation(fields: [tenantId, warehouseId], references: [tenantId, id], onDelete: Restrict)
+  product   Product   @relation(fields: [tenantId, productId], references: [tenantId, id], onDelete: Restrict)
+  lot       Lot?      @relation(fields: [lotId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, productId, createdAt])
+  @@index([tenantId, warehouseId, createdAt])
+  @@index([tenantId, operationId])
+  @@map("stock_movements")
+}
+
+model StockBalance {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @map("tenant_id") @db.Uuid
+  warehouseId String   @map("warehouse_id") @db.Uuid
+  productId   String   @map("product_id") @db.Uuid
+  lotId       String?  @map("lot_id") @db.Uuid
+  // = coalesce(lot_id, uuid cero): permite unicidad incluyendo "sin lote".
+  lotKey      String   @default(dbgenerated("'00000000-0000-0000-0000-000000000000'::uuid")) @map("lot_key") @db.Uuid
+  onHand      Decimal  @default(0) @map("on_hand") @db.Decimal(20, 6)
+  reserved    Decimal  @default(0) @db.Decimal(20, 6)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  warehouse Warehouse @relation(fields: [tenantId, warehouseId], references: [tenantId, id], onDelete: Restrict)
+  product   Product   @relation(fields: [tenantId, productId], references: [tenantId, id], onDelete: Restrict)
+  lot       Lot?      @relation(fields: [lotId], references: [id], onDelete: Restrict)
+
+  @@unique([tenantId, warehouseId, productId, lotKey])
+  @@index([tenantId, productId])
+  @@map("stock_balances")
+}
+
+model IdempotencyKey {
+  tenantId    String   @map("tenant_id") @db.Uuid
+  key         String
+  operation   String
+  requestHash String   @map("request_hash")
+  result      Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@id([tenantId, key])
+  @@map("idempotency_keys")
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPLIED
+  REJECTED
+  CANCELLED
+}
+
+enum AdjustmentKind {
+  ADJUSTMENT
+  WASTE
+}
+
+model StockAdjustment {
+  id              String         @id @default(uuid()) @db.Uuid
+  tenantId        String         @map("tenant_id") @db.Uuid
+  warehouseId     String         @map("warehouse_id") @db.Uuid
+  productId       String         @map("product_id") @db.Uuid
+  lotId           String?        @map("lot_id") @db.Uuid
+  kind            AdjustmentKind @default(ADJUSTMENT)
+  quantity        Decimal        @db.Decimal(20, 6)
+  enteredQuantity Decimal        @map("entered_quantity") @db.Decimal(20, 6)
+  enteredUnit     String         @map("entered_unit")
+  estimatedValue  Decimal        @map("estimated_value") @db.Decimal(20, 2)
+  reason          String
+  status          ApprovalStatus @default(PENDING)
+  requestedById   String         @map("requested_by_id") @db.Uuid
+  decidedById     String?        @map("decided_by_id") @db.Uuid
+  decidedAt       DateTime?      @map("decided_at")
+  decisionNote    String?        @map("decision_note")
+  operationId     String?        @map("operation_id") @db.Uuid
+  createdAt       DateTime       @default(now()) @map("created_at")
+
+  warehouse Warehouse @relation(fields: [tenantId, warehouseId], references: [tenantId, id], onDelete: Restrict)
+  product   Product   @relation(fields: [tenantId, productId], references: [tenantId, id], onDelete: Restrict)
+
+  @@index([tenantId, status, createdAt])
+  @@map("stock_adjustments")
+}
+
+enum CountStatus {
+  OPEN
+  PENDING_APPROVAL
+  APPLIED
+  CANCELLED
+}
+
+model StockCount {
+  id              String      @id @default(uuid()) @db.Uuid
+  tenantId        String      @map("tenant_id") @db.Uuid
+  warehouseId     String      @map("warehouse_id") @db.Uuid
+  status          CountStatus @default(OPEN)
+  note            String?
+  differenceValue Decimal?    @map("difference_value") @db.Decimal(20, 2)
+  createdById     String      @map("created_by_id") @db.Uuid
+  submittedById   String?     @map("submitted_by_id") @db.Uuid
+  approvedById    String?     @map("approved_by_id") @db.Uuid
+  submittedAt     DateTime?   @map("submitted_at")
+  appliedAt       DateTime?   @map("applied_at")
+  operationId     String?     @map("operation_id") @db.Uuid
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  warehouse Warehouse        @relation(fields: [tenantId, warehouseId], references: [tenantId, id], onDelete: Restrict)
+  lines     StockCountLine[]
+
+  @@unique([tenantId, id])
+  @@index([tenantId, status])
+  @@map("stock_counts")
+}
+
+model StockCountLine {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  countId   String   @map("count_id") @db.Uuid
+  productId String   @map("product_id") @db.Uuid
+  lotId     String?  @map("lot_id") @db.Uuid
+  expected  Decimal  @db.Decimal(20, 6)
+  counted   Decimal? @db.Decimal(20, 6)
+
+  count   StockCount @relation(fields: [tenantId, countId], references: [tenantId, id], onDelete: Cascade)
+  product Product    @relation(fields: [tenantId, productId], references: [tenantId, id], onDelete: Restrict)
+
+  @@index([tenantId, countId])
+  @@map("stock_count_lines")
+}
+
+enum TransferStatus {
+  DRAFT
+  SENT
+  RECEIVED
+  CANCELLED
+}
+
+model Transfer {
+  id              String         @id @default(uuid()) @db.Uuid
+  tenantId        String         @map("tenant_id") @db.Uuid
+  fromWarehouseId String         @map("from_warehouse_id") @db.Uuid
+  toWarehouseId   String         @map("to_warehouse_id") @db.Uuid
+  status          TransferStatus @default(DRAFT)
+  note            String?
+  createdById     String         @map("created_by_id") @db.Uuid
+  sentById        String?        @map("sent_by_id") @db.Uuid
+  receivedById    String?        @map("received_by_id") @db.Uuid
+  sentAt          DateTime?      @map("sent_at")
+  receivedAt      DateTime?      @map("received_at")
+  createdAt       DateTime       @default(now()) @map("created_at")
+
+  fromWarehouse Warehouse      @relation("TransferFrom", fields: [tenantId, fromWarehouseId], references: [tenantId, id], onDelete: Restrict)
+  toWarehouse   Warehouse      @relation("TransferTo", fields: [tenantId, toWarehouseId], references: [tenantId, id], onDelete: Restrict)
+  lines         TransferLine[]
+
+  @@unique([tenantId, id])
+  @@index([tenantId, status])
+  @@map("transfers")
+}
+
+model TransferLine {
+  id         String  @id @default(uuid()) @db.Uuid
+  tenantId   String  @map("tenant_id") @db.Uuid
+  transferId String  @map("transfer_id") @db.Uuid
+  productId  String  @map("product_id") @db.Uuid
+  // Lote asignado al enviar (FEFO si no se indicó).
+  lotId      String? @map("lot_id") @db.Uuid
+  quantity   Decimal @db.Decimal(20, 6)
+
+  transfer Transfer @relation(fields: [tenantId, transferId], references: [tenantId, id], onDelete: Cascade)
+  product  Product  @relation(fields: [tenantId, productId], references: [tenantId, id], onDelete: Restrict)
+
+  @@index([tenantId, transferId])
+  @@map("transfer_lines")
 }
 
 // ─────────────────────────────── Suscripción ─────────────────────────────────
@@ -360,18 +660,18 @@ enum SubscriptionStatus {
 }
 
 model Subscription {
-  id                   String             @id @default(uuid()) @db.Uuid
-  tenantId             String             @unique @map("tenant_id") @db.Uuid
-  planId               String             @map("plan_id") @db.Uuid
-  status               SubscriptionStatus @default(TRIALING)
-  trialEndsAt          DateTime?          @map("trial_ends_at")
-  currentPeriodEnd     DateTime?          @map("current_period_end")
-  graceEndsAt          DateTime?          @map("grace_ends_at")
+  id                  String             @id @default(uuid()) @db.Uuid
+  tenantId            String             @unique @map("tenant_id") @db.Uuid
+  planId              String             @map("plan_id") @db.Uuid
+  status              SubscriptionStatus @default(TRIALING)
+  trialEndsAt         DateTime?          @map("trial_ends_at")
+  currentPeriodEnd    DateTime?          @map("current_period_end")
+  graceEndsAt         DateTime?          @map("grace_ends_at")
   // Límites por contrato (plan Empresarial). null = usar los del plan.
-  maxBranchesOverride  Int?               @map("max_branches_override")
-  maxUsersOverride     Int?               @map("max_users_override")
-  createdAt            DateTime           @default(now()) @map("created_at")
-  updatedAt            DateTime           @updatedAt @map("updated_at")
+  maxBranchesOverride Int?               @map("max_branches_override")
+  maxUsersOverride    Int?               @map("max_users_override")
+  createdAt           DateTime           @default(now()) @map("created_at")
+  updatedAt           DateTime           @updatedAt @map("updated_at")
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   plan   Plan   @relation(fields: [planId], references: [id], onDelete: Restrict)

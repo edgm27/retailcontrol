@@ -76,3 +76,12 @@ export async function assertCanAddBranch(tx: Tx, tenantId: string): Promise<void
     );
   }
 }
+
+/** Funcionalidades por plan (plans.features), verificadas en el servidor. */
+export async function assertPlanFeature(tx: Tx, tenantId: string, feature: string, label: string): Promise<void> {
+  const sub = await tx.subscription.findUnique({ where: { tenantId }, include: { plan: true } });
+  const features = Array.isArray(sub?.plan.features) ? (sub!.plan.features as unknown[]) : [];
+  if (!features.includes(feature)) {
+    throw limitExceeded(`${label} no está incluido en su plan. Actualice al plan Profesional o superior.`, { feature });
+  }
+}
