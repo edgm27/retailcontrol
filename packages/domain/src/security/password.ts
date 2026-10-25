@@ -42,8 +42,9 @@ export function getDummyPasswordHash(): Promise<string> {
   return dummyHash;
 }
 
-const COMMON = new Set([
-  "123456789012", "contraseña123", "contrasena123", "password1234", "qwertyuiop12", "venezuela2026",
+// gitleaks:allow — lista pública de contraseñas DÉBILES que se rechazan (no son secretos).
+const COMMON = new Set([ // gitleaks:allow
+  "123456789012", "contraseña123", "contrasena123", "password1234", "qwertyuiop12", "venezuela2026", // gitleaks:allow
   "administrador", "admin1234567", "retailcontrol", "123456789abc",
 ]);
 
