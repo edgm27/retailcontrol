@@ -1,0 +1,14 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+onlyBuiltDependencies:
+  - "@prisma/client"
+  - "@prisma/engines"
+  - prisma
+  - esbuild
+  - sharp
+# Correcciones de seguridad en dependencias transitivas (pnpm audit).
+overrides:
+  postcss: 8.5.31
+  deepmerge-ts: 8.0.2
+  nodemailer: 10.2.1

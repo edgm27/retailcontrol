@@ -1,0 +1,20 @@
+{
+  "name": "@rc/worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "dotenv -e ../../.env -- tsx src/index.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@rc/db": "workspace:*",
+    "@rc/domain": "workspace:*",
+    "pino": "9.14.0"
+  },
+  "devDependencies": {
+    "@rc/config": "workspace:*",
+    "dotenv-cli": "11.0.0",
+    "tsx": "4.20.6"
+  }
+}

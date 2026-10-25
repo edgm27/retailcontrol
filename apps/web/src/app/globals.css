@@ -1,0 +1,38 @@
+@import "tailwindcss";
+@source "../../../../packages/ui/src";
+
+/* Paleta con contraste AA verificado para texto normal sobre fondo. */
+@theme {
+  --color-background: #ffffff;
+  --color-foreground: #0f172a;
+  --color-card: #ffffff;
+  --color-card-foreground: #0f172a;
+  --color-muted: #f1f5f9;
+  --color-muted-foreground: #475569;
+  --color-border: #e2e8f0;
+  --color-input: #cbd5e1;
+  --color-ring: #0f766e;
+  --color-primary: #0f766e;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #e2e8f0;
+  --color-secondary-foreground: #0f172a;
+  --color-accent: #f1f5f9;
+  --color-accent-foreground: #0f172a;
+  --color-destructive: #b91c1c;
+  --color-destructive-foreground: #ffffff;
+  --color-success: #15803d;
+  --color-warning: #b45309;
+}
+
+@layer base {
+  * { border-color: var(--color-border); }
+  body {
+    background: var(--color-background);
+    color: var(--color-foreground);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  :focus-visible { outline: 2px solid var(--color-ring); outline-offset: 2px; }
+}
+
+.skip-link { position: absolute; left: -9999px; }
+.skip-link:focus { left: 1rem; top: 1rem; z-index: 50; background: var(--color-background); padding: .5rem 1rem; border-radius: .375rem; }

@@ -1,0 +1,15 @@
+node_modules/
+.next/
+out/
+dist/
+coverage/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+.dev-mailbox/
+playwright-report/
+test-results/
+backups/
+*.dump
+.DS_Store

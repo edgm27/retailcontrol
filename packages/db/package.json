@@ -1,0 +1,28 @@
+{
+  "name": "@rc/db",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "generate": "prisma generate",
+    "migrate:deploy": "dotenv -e ../../.env -- prisma migrate deploy",
+    "migrate:dev": "dotenv -e ../../.env -- prisma migrate dev",
+    "check-drift": "dotenv -e ../../.env -- sh -c 'prisma migrate diff --from-migrations ./prisma/migrations --to-schema-datamodel ./prisma/schema.prisma --shadow-database-url \"$SHADOW_DATABASE_URL\" --exit-code'",
+    "seed": "dotenv -e ../../.env -- tsx prisma/seed.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@prisma/client": "6.19.3"
+  },
+  "devDependencies": {
+    "@rc/config": "workspace:*",
+    "dotenv-cli": "11.0.0",
+    "prisma": "6.19.3",
+    "tsx": "4.20.6"
+  }
+}

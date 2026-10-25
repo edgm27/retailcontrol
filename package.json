@@ -1,0 +1,47 @@
+{
+  "name": "retailcontrol",
+  "private": true,
+  "version": "0.1.0",
+  "description": "RetailControl — SaaS multiempresa de control de inventarios para comercios venezolanos",
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @rc/web dev",
+    "build": "pnpm --filter @rc/web build",
+    "start": "pnpm --filter @rc/web start",
+    "worker": "pnpm --filter @rc/worker start",
+    "db:bootstrap": "bash scripts/db/bootstrap.sh",
+    "db:generate": "pnpm --filter @rc/db generate",
+    "db:migrate": "pnpm --filter @rc/db migrate:deploy",
+    "db:migrate:dev": "pnpm --filter @rc/db migrate:dev",
+    "db:seed": "pnpm --filter @rc/db seed",
+    "db:check-drift": "pnpm --filter @rc/db check-drift",
+    "typecheck": "pnpm -r --parallel typecheck",
+    "lint": "eslint . --max-warnings=0",
+    "test": "pnpm test:unit && pnpm test:integration",
+    "test:unit": "vitest run --project unit",
+    "test:integration": "vitest run --project integration",
+    "test:e2e": "pnpm --filter @rc/web test:e2e",
+    "backup:test": "bash scripts/db/backup-restore-test.sh",
+    "postinstall": "pnpm --filter @rc/db generate"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.4",
+    "@next/eslint-plugin-next": "15.5.28",
+    "@prisma/client": "6.19.3",
+    "@rc/db": "workspace:*",
+    "@rc/domain": "workspace:*",
+    "@types/node": "22.20.5",
+    "dotenv": "17.2.3",
+    "eslint": "9.39.5",
+    "eslint-plugin-react-hooks": "5.2.0",
+    "globals": "16.5.0",
+    "otplib": "13.5.0",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.46.4",
+    "vite-tsconfig-paths": "5.1.4",
+    "vitest": "3.2.4"
+  }
+}

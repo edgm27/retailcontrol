@@ -1,0 +1,54 @@
+# Blueprint de Render para RetailControl.
+# Render → New → Blueprint → seleccione este repositorio.
+# Planes "free" para no generar costos; la base de datos gratuita de Render
+# tiene límites y vencimiento: NO usar para datos reales (ver docs/deploy-render.md).
+databases:
+  - name: retailcontrol-db
+    plan: free
+    region: virginia
+    postgresMajorVersion: "16"
+    databaseName: retailcontrol
+    user: rc_owner
+    ipAllowList: [] # sin acceso desde Internet; solo red privada de Render
+
+services:
+  - type: web
+    name: retailcontrol-web
+    runtime: node
+    plan: free
+    region: virginia
+    buildCommand: corepack enable && pnpm install --frozen-lockfile --prod=false && pnpm build
+    startCommand: bash scripts/deploy/start-web.sh
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: MIGRATION_DATABASE_URL
+        fromDatabase:
+          name: retailcontrol-db
+          property: connectionString
+      - key: RC_APP_PASSWORD
+        generateValue: true
+      - key: AUTH_SECRET
+        generateValue: true
+      - key: MFA_ENCRYPTION_KEY
+        generateValue: true
+      - key: RECOVERY_CODE_PEPPER
+        generateValue: true
+      - key: AUTH_TRUST_HOST
+        value: "true"
+      - key: LOG_LEVEL
+        value: info
+      # Correo (necesario para entrar con enlace mágico): p. ej. smtp://usuario:clave@smtp.proveedor.com:587
+      - key: EMAIL_TRANSPORT
+        value: smtp
+      - key: SMTP_URL
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      # Opcional: Google OIDC. Redirección: https://<su-app>.onrender.com/api/auth/callback/google
+      - key: AUTH_GOOGLE_ID
+        sync: false
+      - key: AUTH_GOOGLE_SECRET
+        sync: false

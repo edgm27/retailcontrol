@@ -1,0 +1,104 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "22"
+  PGSUPER_URL: postgresql://postgres:postgres@localhost:5432/postgres
+  PGPASSWORD: postgres
+
+jobs:
+  calidad:
+    name: Tipos, lint y pruebas unitarias
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm test:unit
+
+  integracion:
+    name: Migraciones, integración (PostgreSQL real), respaldo y E2E
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 3s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: sudo apt-get update && sudo apt-get install -y postgresql-client gnupg
+      - run: pnpm install --frozen-lockfile
+      - name: Crear .env con secretos aleatorios de CI
+        run: bash scripts/dev/create-env.sh
+      - name: Crear roles y bases de datos
+        run: |
+          set -a; . ./.env; set +a
+          bash scripts/db/bootstrap.sh
+          RC_DB_NAME=retailcontrol_shadow bash scripts/db/bootstrap.sh
+      - name: Aplicar migraciones (rol dueño)
+        run: pnpm db:migrate
+      - name: Verificar que el esquema Prisma y las migraciones coinciden
+        run: pnpm db:check-drift
+      - name: Seeds ficticios (rol de aplicación, con RLS)
+        run: pnpm db:seed
+      - name: Pruebas de integración (aislamiento, RBAC, límites, MFA, jobs)
+        run: pnpm test:integration
+      - name: Respaldo cifrado + restauración verificada
+        run: BACKUP_PASSPHRASE="$(openssl rand -hex 24)" pnpm backup:test
+      - name: Build de producción
+        run: pnpm build
+      - name: Instalar navegador para E2E
+        run: pnpm --filter @rc/web exec playwright install --with-deps chromium
+      - name: Pruebas E2E
+        run: pnpm test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: apps/web/playwright-report
+          retention-days: 7
+
+  seguridad:
+    name: Secretos y dependencias
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Escaneo de secretos (gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Auditoría de dependencias (SCA)
+        run: pnpm audit --prod --audit-level=high

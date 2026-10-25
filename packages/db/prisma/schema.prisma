@@ -1,0 +1,403 @@
+// RetailControl — esquema de datos (Fase 1: fundaciones)
+//
+// Reglas:
+// - Toda tabla con datos de empresa lleva tenant_id y está protegida con RLS
+//   (ver migración *_rls). La aplicación se conecta con el rol rc_app, que NO
+//   es dueño de las tablas y NO tiene BYPASSRLS.
+// - Las referencias entre entidades de una misma empresa usan claves foráneas
+//   compuestas (tenant_id, id) para que la base de datos impida mezclar
+//   empresas aunque el código tenga un error.
+// - Importes, costos, tasas y cantidades: DECIMAL, nunca float.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("MIGRATION_DATABASE_URL")
+}
+
+// ─────────────────────────────── Identidad (global) ───────────────────────────
+
+enum PlatformRole {
+  NONE
+  SUPPORT
+  SUPERADMIN
+}
+
+model User {
+  id            String       @id @default(uuid()) @db.Uuid
+  name          String?
+  email         String       @unique
+  emailVerified DateTime?    @map("email_verified")
+  image         String?
+  platformRole  PlatformRole @default(NONE) @map("platform_role")
+  disabledAt    DateTime?    @map("disabled_at")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+
+  accounts      Account[]
+  sessions      Session[]
+  memberships   Membership[]
+  mfaTotp       MfaTotp?
+  recoveryCodes RecoveryCode[]
+
+  @@map("users")
+}
+
+// Cuentas OAuth/OIDC vinculadas (Auth.js).
+model Account {
+  id                String  @id @default(uuid()) @db.Uuid
+  userId            String  @map("user_id") @db.Uuid
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+// Sesiones en base de datos: revocables al instante (se borra la fila).
+model Session {
+  id             String    @id @default(uuid()) @db.Uuid
+  sessionToken   String    @unique @map("session_token")
+  userId         String    @map("user_id") @db.Uuid
+  expires        DateTime
+  // Segundo factor verificado para ESTA sesión.
+  mfaVerifiedAt  DateTime? @map("mfa_verified_at")
+  // Empresa activa elegida por el usuario; siempre se revalida contra Membership.
+  activeTenantId String?   @map("active_tenant_id") @db.Uuid
+  userAgent      String?   @map("user_agent")
+  ipAddress      String?   @map("ip_address")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  lastSeenAt     DateTime  @default(now()) @map("last_seen_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// Segundo factor TOTP (RFC 6238). El secreto se guarda cifrado (AES-256-GCM).
+model MfaTotp {
+  id             String    @id @default(uuid()) @db.Uuid
+  userId         String    @unique @map("user_id") @db.Uuid
+  secretEnc      String    @map("secret_enc")
+  confirmedAt    DateTime? @map("confirmed_at")
+  // Último paso de tiempo aceptado: impide reutilizar el mismo código.
+  lastUsedStep   BigInt?   @map("last_used_step")
+  failedAttempts Int       @default(0) @map("failed_attempts")
+  lockedUntil    DateTime? @map("locked_until")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("mfa_totp")
+}
+
+// Códigos de recuperación de un solo uso, guardados como HMAC-SHA256.
+model RecoveryCode {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  codeHash  String    @map("code_hash")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, codeHash])
+  @@map("recovery_codes")
+}
+
+// Limitador de frecuencia en PostgreSQL (sin Redis en Fase 1).
+model RateLimitBucket {
+  key         String   @id
+  windowStart DateTime @map("window_start")
+  count       Int      @default(0)
+
+  @@map("rate_limit_buckets")
+}
+
+// ─────────────────────────────── Planes (global) ──────────────────────────────
+
+enum Currency {
+  USD
+  VES
+}
+
+model Plan {
+  id           String   @id @default(uuid()) @db.Uuid
+  code         String   @unique
+  name         String
+  description  String?
+  // Precio de EJEMPLO, editable por la plataforma. No es una oferta comercial.
+  priceMonthly Decimal  @map("price_monthly") @db.Decimal(18, 2)
+  currency     Currency @default(USD)
+  // null = sin límite fijo (definido por contrato en la suscripción).
+  maxBranches  Int?     @map("max_branches")
+  maxUsers     Int?     @map("max_users")
+  features     Json     @default("[]")
+  active       Boolean  @default(true)
+  sortOrder    Int      @default(0) @map("sort_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  subscriptions Subscription[]
+
+  @@map("plans")
+}
+
+// ─────────────────────────────── Empresas (tenant) ────────────────────────────
+
+enum TenantStatus {
+  ACTIVE
+  SUSPENDED
+  CLOSED
+}
+
+model Tenant {
+  id        String       @id @default(uuid()) @db.Uuid
+  name      String
+  legalName String?      @map("legal_name")
+  rif       String?
+  status    TenantStatus @default(ACTIVE)
+  createdAt DateTime     @default(now()) @map("created_at")
+  updatedAt DateTime     @updatedAt @map("updated_at")
+
+  settings     TenantSettings?
+  memberships  Membership[]
+  branches     Branch[]
+  warehouses   Warehouse[]
+  products     Product[]
+  subscription Subscription?
+  invitations  Invitation[]
+  auditEvents  AuditEvent[]
+
+  @@map("tenants")
+}
+
+model TenantSettings {
+  tenantId                    String   @id @map("tenant_id") @db.Uuid
+  locale                      String   @default("es-VE")
+  timezone                    String   @default("America/Caracas")
+  baseCurrency                Currency @default(USD) @map("base_currency")
+  // Si es true, todos los miembros deben usar MFA (no solo propietario/admin).
+  mfaRequiredForAll           Boolean  @default(false) @map("mfa_required_for_all")
+  allowNegativeStock          Boolean  @default(false) @map("allow_negative_stock")
+  // Ajustes de inventario sobre este valor (en moneda base) requieren aprobación.
+  adjustmentApprovalThreshold Decimal  @default(100) @map("adjustment_approval_threshold") @db.Decimal(18, 2)
+  createdAt                   DateTime @default(now()) @map("created_at")
+  updatedAt                   DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("tenant_settings")
+}
+
+enum TenantRole {
+  OWNER
+  ADMIN
+  MANAGER
+  WAREHOUSE
+  BUYER
+  AUDITOR
+  READONLY
+}
+
+enum MembershipStatus {
+  ACTIVE
+  DISABLED
+}
+
+model Membership {
+  id        String           @id @default(uuid()) @db.Uuid
+  tenantId  String           @map("tenant_id") @db.Uuid
+  userId    String           @map("user_id") @db.Uuid
+  role      TenantRole
+  status    MembershipStatus @default(ACTIVE)
+  // Sin filas en membership_branches = acceso a todas las sucursales.
+  createdAt DateTime         @default(now()) @map("created_at")
+  updatedAt DateTime         @updatedAt @map("updated_at")
+
+  tenant   Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user     User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  branches MembershipBranch[]
+
+  @@unique([tenantId, userId])
+  @@unique([tenantId, id])
+  @@index([userId])
+  @@map("memberships")
+}
+
+model MembershipBranch {
+  tenantId     String @map("tenant_id") @db.Uuid
+  membershipId String @map("membership_id") @db.Uuid
+  branchId     String @map("branch_id") @db.Uuid
+
+  membership Membership @relation(fields: [tenantId, membershipId], references: [tenantId, id], onDelete: Cascade)
+  branch     Branch     @relation(fields: [tenantId, branchId], references: [tenantId, id], onDelete: Cascade)
+
+  @@id([membershipId, branchId])
+  @@index([tenantId])
+  @@map("membership_branches")
+}
+
+model Invitation {
+  id          String     @id @default(uuid()) @db.Uuid
+  tenantId    String     @map("tenant_id") @db.Uuid
+  email       String
+  role        TenantRole
+  tokenHash   String     @unique @map("token_hash")
+  invitedById String     @map("invited_by_id") @db.Uuid
+  expiresAt   DateTime   @map("expires_at")
+  acceptedAt  DateTime?  @map("accepted_at")
+  revokedAt   DateTime?  @map("revoked_at")
+  createdAt   DateTime   @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([email])
+  @@map("invitations")
+}
+
+model Branch {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  code      String
+  name      String
+  address   String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant            Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  warehouses        Warehouse[]
+  membershipBranches MembershipBranch[]
+
+  @@unique([tenantId, code])
+  @@unique([tenantId, id])
+  @@map("branches")
+}
+
+model Warehouse {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  branchId  String   @map("branch_id") @db.Uuid
+  code      String
+  name      String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  // FK compuesta: el almacén solo puede colgar de una sucursal de su misma empresa.
+  branch Branch @relation(fields: [tenantId, branchId], references: [tenantId, id], onDelete: Restrict)
+
+  @@unique([tenantId, code])
+  @@unique([tenantId, id])
+  @@index([tenantId, branchId])
+  @@map("warehouses")
+}
+
+// Catálogo mínimo en Fase 1 (se amplía en Fase 2: unidades, códigos de barra,
+// variantes, lotes). Sirve para probar aislamiento con el mismo SKU.
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model Product {
+  id        String        @id @default(uuid()) @db.Uuid
+  tenantId  String        @map("tenant_id") @db.Uuid
+  sku       String
+  name      String
+  status    ProductStatus @default(ACTIVE)
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, sku])
+  @@unique([tenantId, id])
+  @@index([tenantId, name])
+  @@map("products")
+}
+
+// ─────────────────────────────── Suscripción ─────────────────────────────────
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  SUSPENDED
+  CANCELED
+}
+
+model Subscription {
+  id                   String             @id @default(uuid()) @db.Uuid
+  tenantId             String             @unique @map("tenant_id") @db.Uuid
+  planId               String             @map("plan_id") @db.Uuid
+  status               SubscriptionStatus @default(TRIALING)
+  trialEndsAt          DateTime?          @map("trial_ends_at")
+  currentPeriodEnd     DateTime?          @map("current_period_end")
+  graceEndsAt          DateTime?          @map("grace_ends_at")
+  // Límites por contrato (plan Empresarial). null = usar los del plan.
+  maxBranchesOverride  Int?               @map("max_branches_override")
+  maxUsersOverride     Int?               @map("max_users_override")
+  createdAt            DateTime           @default(now()) @map("created_at")
+  updatedAt            DateTime           @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  plan   Plan   @relation(fields: [planId], references: [id], onDelete: Restrict)
+
+  @@map("subscriptions")
+}
+
+// ─────────────────────────────── Auditoría ───────────────────────────────────
+
+// Bitácora inmutable: rc_app solo puede INSERT/SELECT (ver migración *_rls).
+// tenant_id null = evento de seguridad de cuenta o de plataforma.
+model AuditEvent {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String?  @map("tenant_id") @db.Uuid
+  actorUserId   String?  @map("actor_user_id") @db.Uuid
+  action        String
+  entityType    String   @map("entity_type")
+  entityId      String?  @map("entity_id")
+  before        Json?
+  after         Json?
+  metadata      Json?
+  ipAddress     String?  @map("ip_address")
+  userAgent     String?  @map("user_agent")
+  correlationId String?  @map("correlation_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, createdAt(sort: Desc)])
+  @@index([actorUserId, createdAt(sort: Desc)])
+  @@map("audit_events")
+}

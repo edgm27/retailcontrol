@@ -1,0 +1,11 @@
+title = "RetailControl gitleaks"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Valores de ejemplo y claves ficticias de pruebas"
+paths = [
+  '''\.env\.example$''',
+  '''tests/setup-env\.ts$''',
+]
