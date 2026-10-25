@@ -36,3 +36,13 @@
 
 .skip-link { position: absolute; left: -9999px; }
 .skip-link:focus { left: 1rem; top: 1rem; z-index: 50; background: var(--color-background); padding: .5rem 1rem; border-radius: .375rem; }
+
+/* Landing */
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+.landing { font-family: var(--font-landing), ui-sans-serif, system-ui, sans-serif; }
+@keyframes rc-fade-in { from { opacity: 0; } to { opacity: 1; } }
+.rc-fade { animation: rc-fade-in .8s ease both; }
+@keyframes rc-progress { from { width: 0; } to { width: 100%; } }
+.rc-progress { animation-name: rc-progress; animation-timing-function: linear; animation-fill-mode: both; }
+@media (prefers-reduced-motion: reduce) { .rc-fade, .rc-progress { animation: none; } }

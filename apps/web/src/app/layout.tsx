@@ -1,6 +1,10 @@
 import type { Metadata, Viewport } from "next";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import type { ReactNode } from "react";
 import "./globals.css";
+
+// Fuente autoalojada en el build (no carga nada de Google en el navegador; compatible con la CSP).
+const landingFont = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-landing", display: "swap" });
 
 export const metadata: Metadata = {
   title: { default: "RetailControl", template: "%s · RetailControl" },
@@ -17,7 +21,7 @@ export const viewport: Viewport = { width: "device-width", initialScale: 1, them
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="es-VE">
+    <html lang="es-VE" className={landingFont.variable}>
       <body className="min-h-dvh antialiased">
         <a href="#contenido" className="skip-link">Saltar al contenido</a>
         {children}

@@ -1,47 +1,63 @@
-import { buttonVariants, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@rc/ui";
-import Link from "next/link";
+import { prisma } from "@rc/db";
+import type { Metadata } from "next";
+import { LandingHeader } from "@/components/landing/header";
+import { Hero } from "@/components/landing/hero";
+import {
+  CtaFinal,
+  Funcionalidades,
+  LandingFooter,
+  Precios,
+  Preguntas,
+  Sectores,
+  Seguridad,
+  type PlanView,
+} from "@/components/landing/sections";
 
-// Landing provisional de Fase 1. La landing comercial completa (comparador de
-// planes, FAQ, sectores) se construye en Fase 4.
-export default function Home() {
+export const metadata: Metadata = {
+  title: "RetailControl — Tu inventario siempre al día",
+  description:
+    "Controla productos, lotes, vencimientos y almacenes en un solo lugar. Para abastos, minimarkets, ferreterías y comercios venezolanos.",
+};
+
+const FALLBACK_PLANS: PlanView[] = [
+  { code: "BASICO", name: "Básico", description: "Para un comercio con una sola tienda.", price: "15,00", maxBranches: 1, maxUsers: 2 },
+  { code: "PROFESIONAL", name: "Profesional", description: "Para comercios con varias sucursales y compras.", price: "39,00", maxBranches: 3, maxUsers: 10 },
+  { code: "EMPRESARIAL", name: "Empresarial", description: "Límites por contrato y soporte prioritario.", price: "0", maxBranches: null, maxUsers: null },
+];
+
+/** Los precios salen de la tabla de planes (editables por la plataforma). */
+async function loadPlans(): Promise<PlanView[]> {
+  try {
+    const rows = await prisma.plan.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } });
+    if (!rows.length) return FALLBACK_PLANS;
+    return rows.map((p) => ({
+      code: p.code,
+      name: p.name,
+      description: p.description,
+      price: Number(p.priceMonthly).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      maxBranches: p.maxBranches,
+      maxUsers: p.maxUsers,
+    }));
+  } catch {
+    return FALLBACK_PLANS;
+  }
+}
+
+export default async function Home() {
+  const plans = await loadPlans();
   return (
-    <main id="contenido" className="mx-auto flex max-w-4xl flex-col gap-10 px-4 py-12">
-      <header className="flex items-center justify-between">
-        <span className="text-xl font-bold text-primary">RetailControl</span>
-        <nav aria-label="Cuenta" className="flex gap-2">
-          <Link className={buttonVariants({ variant: "outline" })} href="/login">Entrar</Link>
-          <Link className={buttonVariants()} href="/login?registro=1">Crear cuenta</Link>
-        </nav>
-      </header>
-      <section className="grid gap-4">
-        <h1 className="text-3xl font-bold leading-tight sm:text-4xl">
-          Inventario claro para abastos, minimarkets y ferreterías
-        </h1>
-        <p className="max-w-2xl text-lg text-muted-foreground">
-          Controle existencias por almacén, lotes y fechas de vencimiento, con precios de referencia en USD o
-          bolívares y una bitácora de cada cambio.
-        </p>
-      </section>
-      <section className="grid gap-4 sm:grid-cols-3" aria-label="Beneficios">
-        {[
-          ["Lotes y vencimientos", "Despacho FEFO y alertas antes de que la mercancía venza."],
-          ["Varias sucursales", "Almacenes, transferencias y permisos por sucursal."],
-          ["Seguridad", "Verificación en dos pasos y datos aislados por empresa."],
-        ].map(([t, d]) => (
-          <Card key={t}>
-            <CardHeader>
-              <CardTitle className="text-base">{t}</CardTitle>
-              <CardDescription>{d}</CardDescription>
-            </CardHeader>
-          </Card>
-        ))}
-      </section>
-      <Card>
-        <CardContent className="pt-5 text-sm text-muted-foreground">
-          Versión en desarrollo. RetailControl no emite facturas fiscales ni sustituye su sistema de facturación
-          homologado.
-        </CardContent>
-      </Card>
-    </main>
+    <div className="landing">
+      <LandingHeader />
+      <main id="contenido">
+        <Hero />
+        <Funcionalidades />
+        <Sectores />
+        <Precios plans={plans} />
+        <Seguridad />
+        <Preguntas />
+        <CtaFinal />
+      </main>
+      <LandingFooter />
+    </div>
   );
 }

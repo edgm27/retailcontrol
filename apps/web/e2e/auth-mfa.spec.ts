@@ -116,12 +116,21 @@ test("cabeceras de seguridad y CSP con nonce", async ({ request }) => {
   expect(h["x-correlation-id"]).toMatch(/^[\w-]{8,64}$/);
 });
 
-test("la landing hidrata sin errores de CSP", async ({ page }) => {
+test("la landing hidrata sin errores de CSP, con video de fondo silenciado y carrusel", async ({ page }) => {
   const errors: string[] = [];
   page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
   await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1 })).toContainText("Inventario claro");
-  await page.getByRole("link", { name: "Entrar" }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("Tu inventario");
+  // El video de fondo existe, está silenciado y no tiene controles de sonido.
+  const video = page.getByTestId("hero-video");
+  await expect(video).toHaveJSProperty("muted", true);
+  await expect(page.getByTestId("slide-title")).toContainText("lotes y vencimientos");
+  await page.getByRole("button", { name: "Ir a la diapositiva 2 de 3" }).click();
+  await expect(page.getByTestId("slide-title")).toContainText("sucursales");
+  await expect(video).toHaveAttribute("src", "/media/inventario.mp4");
+  // Precios desde la base de datos.
+  await expect(page.locator("#precios")).toContainText("Profesional");
+  await page.getByRole("link", { name: "Iniciar sesión" }).first().click();
   await expect(page).toHaveURL(/\/login/);
   expect(errors.filter((e) => /Content Security Policy|Refused/i.test(e))).toEqual([]);
 });
