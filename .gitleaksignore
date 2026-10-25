@@ -1,0 +1,2 @@
+# Falsos positivos revisados: vector público de prueba del RFC 6238 (no es un secreto).
+054c6aeca15532d423a0e699928bf9d0128c4250:packages/domain/test/security.test.ts:generic-api-key:75

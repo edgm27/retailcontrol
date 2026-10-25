@@ -72,7 +72,7 @@ describe("TOTP RFC 6238", () => {
 
   it("cumple los vectores de prueba oficiales del RFC 6238 (SHA-1)", () => {
     // Secreto ASCII "12345678901234567890" en base32; se comparan los 6 últimos dígitos.
-    const rfcSecret = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ";
+    const rfcSecret = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ"; // gitleaks:allow (vector público del RFC 6238)
     expect(generateTotp(rfcSecret, 59_000)).toBe("287082");
     expect(generateTotp(rfcSecret, 1_111_111_109_000)).toBe("081804");
     expect(generateTotp(rfcSecret, 1_234_567_890_000)).toBe("005924");
