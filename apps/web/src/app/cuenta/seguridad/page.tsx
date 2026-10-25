@@ -1,9 +1,16 @@
-import { getMfaStatus, isMfaMandatory, listUserSessions } from "@rc/domain";
+import { getMfaStatus, isMfaMandatory, listUserSessions, PASSWORD_MIN_LENGTH, userHasPassword } from "@rc/domain";
 import { Alert, Badge, buttonVariants, Card, CardContent, CardDescription, CardHeader, CardTitle, Field, Input } from "@rc/ui";
 import Link from "next/link";
 import { ActionForm } from "@/components/action-form";
 import { requireVerifiedUser } from "@/server/session";
-import { disableMfaAction, regenerateCodesAction, revokeAllAction, revokeOthersAction, revokeSessionAction } from "./actions";
+import {
+  disableMfaAction,
+  regenerateCodesAction,
+  revokeAllAction,
+  revokeOthersAction,
+  revokeSessionAction,
+  setPasswordAction,
+} from "./actions";
 import { RegenerateCodesForm } from "./regenerate-form";
 
 export const metadata = { title: "Seguridad de la cuenta" };
@@ -16,10 +23,11 @@ function fmt(d: Date) {
 export default async function SecurityPage({ searchParams }: { searchParams: Promise<{ recuperacion?: string }> }) {
   const sp = await searchParams;
   const user = await requireVerifiedUser();
-  const [mfa, mandatory, sessions] = await Promise.all([
+  const [mfa, mandatory, sessions, hasPassword] = await Promise.all([
     getMfaStatus(user.userId),
     isMfaMandatory(user.userId),
     listUserSessions(user.userId),
+    userHasPassword(user.userId),
   ]);
 
   return (
@@ -44,7 +52,15 @@ export default async function SecurityPage({ searchParams }: { searchParams: Pro
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-6">
-          {!mfa.enrolled && <Link href="/mfa/configurar" className={buttonVariants()}>Activar verificación en dos pasos</Link>}
+          {!mfa.enrolled && (
+            <>
+              <p className="text-sm text-muted-foreground">
+                Al activarla, además de su contraseña se pedirá un código de 6 dígitos de Google Authenticator (u otra
+                app compatible) cada vez que inicie sesión.
+              </p>
+              <Link href="/mfa/configurar" className={buttonVariants()}>Activar verificación en dos pasos</Link>
+            </>
+          )}
           {mfa.enrolled && <RegenerateCodesForm action={regenerateCodesAction} />}
           {mfa.enrolled && !mandatory && (
             <ActionForm action={disableMfaAction} submitLabel="Desactivar verificación" variant="destructive">
@@ -56,6 +72,30 @@ export default async function SecurityPage({ searchParams }: { searchParams: Pro
           {mfa.enrolled && mandatory && (
             <p className="text-sm text-muted-foreground">Su rol exige la verificación en dos pasos; no puede desactivarse.</p>
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">{hasPassword ? "Cambiar contraseña" : "Definir contraseña"}</CardTitle>
+          <CardDescription>
+            Mínimo {PASSWORD_MIN_LENGTH} caracteres. Al guardarla se cierran sus sesiones en otros dispositivos.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ActionForm action={setPasswordAction} submitLabel="Guardar contraseña">
+            {hasPassword && (
+              <Field label="Contraseña actual" htmlFor="pw-current">
+                <Input id="pw-current" name="current" type="password" autoComplete="current-password" required />
+              </Field>
+            )}
+            <Field label="Nueva contraseña" htmlFor="pw-next">
+              <Input id="pw-next" name="next" type="password" autoComplete="new-password" minLength={PASSWORD_MIN_LENGTH} required />
+            </Field>
+            <Field label="Confirmar nueva contraseña" htmlFor="pw-confirm">
+              <Input id="pw-confirm" name="confirm" type="password" autoComplete="new-password" minLength={PASSWORD_MIN_LENGTH} required />
+            </Field>
+          </ActionForm>
         </CardContent>
       </Card>
 

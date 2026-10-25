@@ -27,7 +27,8 @@ export async function loginWithMagicLink(page: Page, email: string) {
   await rm(path.join(MAILBOX_DIR, `${email}.json`), { force: true });
   const t0 = Date.now() - 1000;
   await page.goto("/login");
-  await page.getByLabel("Correo electrónico").fill(email);
+  await page.getByText("¿Sin contraseña u olvidó la suya?").click();
+  await page.locator("#email").fill(email);
   await page.getByRole("button", { name: "Enviar enlace de acceso" }).click();
   await expect(page.getByRole("heading", { name: "Revise su correo" })).toBeVisible();
   await page.goto(await readMagicLink(email, t0));

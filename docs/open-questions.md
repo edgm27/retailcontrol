@@ -18,7 +18,8 @@ de negocio; al resolverse, registrar la respuesta y, si aplica, un ADR.
 | Id | Pregunta | Predeterminado |
 |---|---|---|
 | Q-PRD-1 | ¿Duración de la prueba gratuita y plan de prueba? | 14 días, plan Básico |
-| Q-PRD-2 | ¿Se requiere registro con contraseña además de Google y enlace mágico? | No (menos superficie de ataque); se puede añadir |
+| Q-PRD-2 | ¿Acceso con contraseña además de Google y enlace mágico? | **Resuelto (2026-10-25)**: sí, correo + contraseña (scrypt), definible desde Seguridad |
+| Q-PRD-5 | ¿Cuándo vuelve a ser obligatorio el MFA para propietario/administrador? | Hoy opcional en Render (fase de pruebas, `MFA_ENFORCE_PRIVILEGED_ROLES=false`); volver a `true` antes de datos reales |
 | Q-PRD-3 | ¿Tiempo de vida de sesión? | 12 h, renovación cada hora de uso |
 | Q-PRD-4 | ¿Una persona puede crear varias empresas? | Sí, hasta 5 por día (límite antiabuso) |
 | Q-RBAC-1 | ¿El almacenista registra mermas sin aprobación? | No: merma = ajuste (requiere `inventory.adjust`) |

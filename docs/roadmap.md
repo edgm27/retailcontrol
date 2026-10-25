@@ -12,6 +12,12 @@
 | 5 — Producción | Reportes, exportaciones, observabilidad, rendimiento, seguridad, despliegue | ⏳ | Checklist de go-live |
 | Posterior | POS, facturación fiscal autorizada, contabilidad, bancos | — | Requiere ADR y asesoría legal |
 
+### Cambios posteriores (2026-10-25)
+
+- Acceso con correo + contraseña, administrador inicial por variables secretas, MFA de propietario/admin
+  configurable (opcional en la fase de pruebas en Render). Probado en integración y E2E.
+- Despliegue en Render (Blueprint) y CI en GitHub en verde.
+
 ### Pendientes conocidos de la Fase 1
 
 - Google OIDC está **implementado pero no probado contra Google real** (requiere credenciales del cliente OAuth).

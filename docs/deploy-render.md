@@ -21,6 +21,17 @@ En cada arranque, `start-web.sh`:
 Los secretos `RC_APP_PASSWORD`, `AUTH_SECRET`, `MFA_ENCRYPTION_KEY` y `RECOVERY_CODE_PEPPER` los genera Render.
 `AUTH_URL` se toma de `RENDER_EXTERNAL_URL` automáticamente.
 
+## Administrador inicial y MFA en fase de pruebas
+
+- En **retailcontrol-web → Environment** defina `ADMIN_EMAIL` y `ADMIN_INITIAL_PASSWORD` (12+ caracteres).
+  En el siguiente despliegue se crea ese usuario con una empresa de pruebas (rol Propietario). Si el usuario ya
+  existe no se modifica nada: cambiar la contraseña desde **Seguridad** es permanente.
+- `MFA_ENFORCE_PRIVILEGED_ROLES=false` (valor del Blueprint): la verificación en dos pasos es **opcional** y
+  cada usuario la activa desde **Seguridad**. Una vez activada, se exige en cada inicio de sesión.
+  **Antes de recibir datos reales, cámbiela a `true`** para exigirla a propietarios y administradores.
+- Tras el primer acceso, cambie la contraseña inicial desde **Seguridad** y considere borrar
+  `ADMIN_INITIAL_PASSWORD` del panel.
+
 ## Pasos
 
 1. En Render: **New → Blueprint** → conecte su cuenta de GitHub → elija el repositorio.
@@ -30,8 +41,8 @@ Los secretos `RC_APP_PASSWORD`, `AUTH_SECRET`, `MFA_ENCRYPTION_KEY` y `RECOVERY_
      Puede usar cualquier proveedor SMTP transaccional.
    - **Google (opcional)**: `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET`. En Google Cloud Console, la URI de
      redirección es `https://<su-servicio>.onrender.com/api/auth/callback/google`.
-   - Sin SMTP ni Google **nadie podrá iniciar sesión** (por seguridad, el buzón de desarrollo está bloqueado
-     en producción).
+   - Sin SMTP ni Google solo se puede entrar con **correo + contraseña** (administrador inicial o usuarios que
+     ya definieron contraseña). El enlace mágico por correo requiere SMTP.
 3. **Apply**. Al terminar, abra `https://<su-servicio>.onrender.com/api/health` → `{"status":"ok","db":"ok"}`.
 
 ## Si falla al crear `rc_app`

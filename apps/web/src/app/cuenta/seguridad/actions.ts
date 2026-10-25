@@ -6,6 +6,7 @@ import {
   revokeAllSessions,
   revokeOtherSessions,
   revokeSession,
+  setPassword,
   totpCodeSchema,
 } from "@rc/domain";
 import { revalidatePath } from "next/cache";
@@ -60,5 +61,20 @@ export async function revokeAllAction(_: FormState): Promise<FormState> {
     const u = await requireVerifiedUser();
     await revokeAllSessions(await toUserActor(u));
     redirect("/login");
+  });
+}
+
+export async function setPasswordAction(_: FormState, fd: FormData): Promise<FormState> {
+  return runAction(async () => {
+    const u = await requireVerifiedUser();
+    const r = await setPassword(
+      { ...(await toUserActor(u)), sessionId: u.sessionId },
+      { current: str(fd, "current") || undefined, next: str(fd, "next"), confirm: str(fd, "confirm") },
+    );
+    revalidatePath(PATH);
+    return {
+      ok: true,
+      message: `Contraseña guardada.${r.otherSessionsRevoked ? ` Se cerraron ${r.otherSessionsRevoked} sesión(es) en otros dispositivos.` : ""}`,
+    };
   });
 }

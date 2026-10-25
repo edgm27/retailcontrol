@@ -19,3 +19,5 @@ export * from "./services/products";
 export * from "./services/mfa";
 export * from "./services/sessions";
 export * from "./services/jobs";
+export * from "./security/password";
+export * from "./services/password-auth";

@@ -4,7 +4,7 @@ import { getSecurityConfig } from "../security/config";
 import { decryptSecret, encryptSecret } from "../security/crypto";
 import { generateRecoveryCodes, hashRecoveryCode } from "../security/recovery-codes";
 import { buildOtpAuthUrl, generateTotpSecret, verifyTotp } from "../security/totp";
-import { MFA_REQUIRED_ROLES, type Role } from "../rbac";
+import { roleRequiresMfa, type Role } from "../rbac";
 import { recordAudit } from "./audit";
 import { enforceRateLimit } from "./rate-limit";
 import type { RequestMeta, UserActor } from "./types";
@@ -44,7 +44,7 @@ export async function isMfaMandatory(userId: string): Promise<boolean> {
   const roles = await withContext({ userId }, (tx) =>
     tx.membership.findMany({ where: { userId, status: "ACTIVE" }, select: { role: true } }),
   );
-  return roles.some((r) => MFA_REQUIRED_ROLES.has(r.role as Role));
+  return roles.some((r) => roleRequiresMfa(r.role as Role));
 }
 
 /**

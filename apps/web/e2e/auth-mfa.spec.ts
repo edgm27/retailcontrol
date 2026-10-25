@@ -60,6 +60,12 @@ test("propietario: registro → empresa → MFA obligatorio → recuperación �
   await expect(page).toHaveURL(/\/cuenta\/seguridad\?recuperacion=1/);
   await expect(page.getByText("Le quedan 9")).toBeVisible();
 
+  // 4b. Definir contraseña desde Seguridad.
+  await page.getByLabel("Nueva contraseña", { exact: true }).fill("Clave-E2E-Segura-2026");
+  await page.getByLabel("Confirmar nueva contraseña").fill("Clave-E2E-Segura-2026");
+  await page.getByRole("button", { name: "Guardar contraseña" }).click();
+  await expect(page.getByText(/Contraseña guardada/)).toBeVisible();
+
   // 5. Segundo dispositivo con TOTP.
   const other = await browser.newContext();
   const page2 = await other.newPage();
@@ -82,6 +88,21 @@ test("propietario: registro → empresa → MFA obligatorio → recuperación �
   await page2.goto("/app");
   await expect(page2).toHaveURL(/\/login/);
   await other.close();
+
+  // 7. Entrar con correo + contraseña: como tiene MFA activo, pide el código.
+  await page.goto("/app");
+  await page.getByRole("button", { name: "Salir" }).click();
+  await page.goto("/login");
+  await page.getByLabel("Correo electrónico").first().fill(email);
+  await page.getByLabel("Contraseña").fill("clave-incorrecta-123");
+  await page.getByRole("button", { name: "Entrar", exact: true }).click();
+  await expect(page.getByRole("main").getByRole("alert")).toContainText("Correo o contraseña incorrectos");
+  await page.getByLabel("Contraseña").fill("Clave-E2E-Segura-2026");
+  await page.getByRole("button", { name: "Entrar", exact: true }).click();
+  await expect(page).toHaveURL(/\/mfa\/verificar/);
+  await page.getByLabel("Código", { exact: true }).fill(await freshTotp(secret));
+  await page.getByRole("button", { name: "Verificar", exact: true }).click();
+  await expect(page.getByTestId("active-tenant")).toContainText("Abastos E2E");
 });
 
 test("cabeceras de seguridad y CSP con nonce", async ({ request }) => {

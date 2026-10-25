@@ -131,8 +131,17 @@ export function hasPermission(role: Role, permission: Permission): boolean {
 /** Roles que siempre exigen MFA (además de la política de la empresa). */
 export const MFA_REQUIRED_ROLES: ReadonlySet<Role> = new Set<Role>(["OWNER", "ADMIN"]);
 
+/**
+ * Política de plataforma: MFA obligatorio para propietario/administrador.
+ * MFA_ENFORCE_PRIVILEGED_ROLES=false lo vuelve opcional (activable desde
+ * "Seguridad") — pensado SOLO para la fase de pruebas. Por defecto: obligatorio.
+ */
+export function privilegedMfaEnforced(env: NodeJS.ProcessEnv = process.env): boolean {
+  return env.MFA_ENFORCE_PRIVILEGED_ROLES !== "false";
+}
+
 export function roleRequiresMfa(role: Role, mfaRequiredForAll = false): boolean {
-  return mfaRequiredForAll || MFA_REQUIRED_ROLES.has(role);
+  return mfaRequiredForAll || (privilegedMfaEnforced() && MFA_REQUIRED_ROLES.has(role));
 }
 
 /**

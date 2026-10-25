@@ -1,7 +1,7 @@
 "use client";
 
 import { Alert, Button, cn } from "@rc/ui";
-import { useActionState, type ReactNode } from "react";
+import { startTransition, useActionState, useEffect, useRef, type FormEvent, type ReactNode } from "react";
 
 export interface ClientFormState<T = unknown> {
   ok: boolean;
@@ -35,8 +35,22 @@ export function ActionForm<T>({
   renderResult?: (state: ClientFormState<T>) => ReactNode;
 }) {
   const [state, formAction, pending] = useActionState(action, { ok: false } as ClientFormState<T>);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // React 19 vacía el formulario tras cada envío; aquí solo se limpia si la
+  // acción tuvo éxito, para que el usuario no reescriba sus datos tras un error.
+  useEffect(() => {
+    if (state.ok) formRef.current?.reset();
+  }, [state]);
+
+  function onSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    startTransition(() => formAction(fd));
+  }
+
   return (
-    <form action={formAction} className={cn("grid gap-4", className)} noValidate={false}>
+    <form ref={formRef} action={formAction} onSubmit={onSubmit} className={cn("grid gap-4", className)} noValidate={false}>
       {children}
       {state.fieldErrors && (
         <ul className="text-sm text-destructive" aria-live="polite">

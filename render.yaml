@@ -40,6 +40,18 @@ services:
         value: "true"
       - key: LOG_LEVEL
         value: info
+      # FASE DE PRUEBAS: MFA opcional (se activa desde Seguridad). Cambiar a "true"
+      # antes de recibir datos de clientes reales para exigirlo a propietarios/admins.
+      - key: MFA_ENFORCE_PRIVILEGED_ROLES
+        value: "false"
+      # Administrador inicial de pruebas (solo se crea si no existe). La contraseña
+      # se escribe en el panel de Render; NUNCA en este archivo (repositorio público).
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_INITIAL_PASSWORD
+        sync: false
+      - key: ADMIN_COMPANY_NAME
+        value: Empresa de pruebas
       # Correo (necesario para entrar con enlace mágico): p. ej. smtp://usuario:clave@smtp.proveedor.com:587
       - key: EMAIL_TRANSPORT
         value: smtp

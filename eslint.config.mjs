@@ -45,7 +45,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ["tests/**/*.ts", "**/prisma/seed.ts", "**/scripts/**/*.mjs"],
+    files: ["tests/**/*.ts", "**/prisma/seed.ts", "**/scripts/**/*.mjs", "apps/worker/src/bootstrap-admin.ts"],
     rules: { "no-restricted-properties": "off", "no-console": "off" },
   },
 );

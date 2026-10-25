@@ -23,3 +23,15 @@ la BD y cifrado en reposo; pendiente evaluar hash del token.
 ## Alternativas
 Better Auth (plugins de 2FA y organizaciones, menos rodaje), Keycloak/Zitadel (más operación), Clerk/Auth0
 (costo y residencia de datos; posible bloqueo para Venezuela).
+
+## Enmienda 2026-10-25 — Acceso con contraseña
+
+Por requerimiento del negocio se añade **correo + contraseña**:
+- Hash **scrypt** (N=2^17, r=8, p=1, sal de 16 bytes), comparación en tiempo constante, política NIST
+  (12+ caracteres, sin claves obvias ni el propio correo).
+- Mensaje genérico ("Correo o contraseña incorrectos"), tiempo similar exista o no el usuario, límite de
+  10 intentos por correo y 50 por IP cada 15 minutos; intentos fallidos auditados.
+- La sesión se crea en la misma tabla y cookie que Auth.js (revocable igual); el MFA se exige después si está
+  activo. Cambiar la contraseña exige la actual y cierra las demás sesiones.
+- Administrador inicial creado al desplegar desde variables secretas (`ADMIN_EMAIL`,
+  `ADMIN_INITIAL_PASSWORD`); nunca en el repositorio. Solo se crea si no existe.

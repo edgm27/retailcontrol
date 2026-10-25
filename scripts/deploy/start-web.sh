@@ -13,5 +13,6 @@ export AUTH_TRUST_HOST="${AUTH_TRUST_HOST:-true}"
 export NODE_ENV=production
 
 (cd packages/db && node scripts/prepare-deploy.mjs)
+(cd apps/worker && node_modules/.bin/tsx src/bootstrap-admin.ts)
 cd apps/web
 exec node_modules/.bin/next start -p "${PORT:-3000}"
