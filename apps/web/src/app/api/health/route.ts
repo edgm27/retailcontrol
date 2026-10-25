@@ -8,6 +8,9 @@ export async function GET() {
   const info = {
     version: pkg.version,
     commit: (process.env.RENDER_GIT_COMMIT ?? process.env.GIT_COMMIT ?? "local").slice(0, 7),
+    // Diagnóstico de la fase de pruebas: indica solo SI las variables existen, nunca su valor.
+    adminConfigured: Boolean(process.env.ADMIN_EMAIL?.trim() && process.env.ADMIN_INITIAL_PASSWORD?.trim()),
+    mfaEnforced: process.env.MFA_ENFORCE_PRIVILEGED_ROLES !== "false",
   };
   try {
     await prisma.$queryRaw`SELECT 1`;

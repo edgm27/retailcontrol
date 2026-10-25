@@ -72,14 +72,30 @@ describe("Inicio de sesión con contraseña", () => {
 describe("Administrador inicial de pruebas", () => {
   it("se crea con empresa propia como propietario y es idempotente (no pisa la contraseña)", async () => {
     const email = `admin.${Date.now()}@example.com`;
-    const first = await ensureBootstrapAdmin({ email, password: "Clave-Inicial-2026!", companyName: "Demo Admin" });
-    expect(first.created).toBe(true);
+    const first = await ensureBootstrapAdmin({ email: `  ${email} `, password: " Clave-Inicial-2026! ", companyName: "Demo Admin" });
+    expect(first.status).toBe("created");
     const tenants = await listUserTenants(first.userId);
     expect(tenants).toEqual([expect.objectContaining({ name: "Demo Admin", role: "OWNER" })]);
 
     const again = await ensureBootstrapAdmin({ email, password: "Otra-Clave-Distinta-9!" });
-    expect(again).toEqual({ created: false, userId: first.userId });
+    expect(again.status).toBe("unchanged");
+    // Los espacios accidentales del panel se ignoran.
     await expect(authenticateWithPassword(email, "Clave-Inicial-2026!")).resolves.toEqual({ userId: first.userId });
+
+    // Restablecer desde el despliegue (ADMIN_RESET_PASSWORD=true) cambia la clave y cierra sesiones.
+    await createSession(first.userId);
+    const reset = await ensureBootstrapAdmin({ email, password: "Otra-Clave-Distinta-9!", resetPassword: true });
+    expect(reset.status).toBe("password_reset");
+    expect(await prisma.session.count({ where: { userId: first.userId } })).toBe(0);
+    await expect(authenticateWithPassword(email, "Otra-Clave-Distinta-9!")).resolves.toEqual({ userId: first.userId });
+  });
+
+  it("si el correo ya existía sin contraseña, le asigna la inicial y le crea empresa", async () => {
+    const u = await createUser("existia-sin-clave");
+    const r = await ensureBootstrapAdmin({ email: u.email, password: "Clave-Inicial-2026!" });
+    expect(r.status).toBe("password_set");
+    expect((await listUserTenants(u.userId)).length).toBe(1);
+    await expect(authenticateWithPassword(u.email, "Clave-Inicial-2026!")).resolves.toEqual({ userId: u.userId });
   });
 
   it("rechaza contraseñas iniciales débiles", async () => {

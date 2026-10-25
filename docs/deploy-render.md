@@ -29,6 +29,10 @@ Los secretos `RC_APP_PASSWORD`, `AUTH_SECRET`, `MFA_ENCRYPTION_KEY` y `RECOVERY_
 - `MFA_ENFORCE_PRIVILEGED_ROLES=false` (valor del Blueprint): la verificación en dos pasos es **opcional** y
   cada usuario la activa desde **Seguridad**. Una vez activada, se exige en cada inicio de sesión.
   **Antes de recibir datos reales, cámbiela a `true`** para exigirla a propietarios y administradores.
+- Diagnóstico: `https://<su-servicio>.onrender.com/api/health` muestra `"adminConfigured": true` cuando
+  ambas variables están definidas.
+- ¿No puede entrar? Agregue `ADMIN_RESET_PASSWORD` = `true`, guarde (redespliega), entre con
+  `ADMIN_INITIAL_PASSWORD` y **luego borre `ADMIN_RESET_PASSWORD`** (si no, cada despliegue la restablecería).
 - Tras el primer acceso, cambie la contraseña inicial desde **Seguridad** y considere borrar
   `ADMIN_INITIAL_PASSWORD` del panel.
 

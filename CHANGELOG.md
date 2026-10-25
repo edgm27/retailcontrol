@@ -2,6 +2,13 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versionado semántico.
 
+## [0.2.1] — 2026-10-25
+
+### Corregido / añadido
+- Administrador inicial: ignora espacios accidentales en `ADMIN_EMAIL` / `ADMIN_INITIAL_PASSWORD`; si el correo
+  ya existía sin contraseña, se la asigna; `ADMIN_RESET_PASSWORD=true` la restablece (cierra sesiones, auditado).
+- `/api/health` indica si las variables del administrador están configuradas (sin mostrar valores).
+
 ## [0.2.0] — 2026-10-25
 
 ### Añadido

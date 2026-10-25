@@ -130,37 +130,80 @@ export async function setPassword(
 }
 
 /**
- * Administrador inicial para pruebas (se ejecuta al desplegar). Solo crea el
- * usuario y su empresa demo si NO existe: nunca sobrescribe la contraseña, para
- * que un cambio hecho desde la app no se pierda en el siguiente despliegue.
+ * Administrador inicial para pruebas (se ejecuta al desplegar).
+ * - Si no existe: crea el usuario con su empresa de pruebas (Propietario).
+ * - Si existe SIN contraseña (p. ej. entró antes con Google/enlace): le asigna la inicial.
+ * - Si existe CON contraseña: no la toca, salvo `resetPassword` (ADMIN_RESET_PASSWORD=true),
+ *   que la restablece, cierra sus sesiones y queda auditado.
+ * Nunca registra la contraseña.
  */
+export type BootstrapResult =
+  | { status: "created"; userId: string; tenantId: string }
+  | { status: "password_set" | "password_reset" | "unchanged"; userId: string; tenantId?: string };
+
 export async function ensureBootstrapAdmin(input: {
   email: string;
   password: string;
   name?: string;
   companyName?: string;
-}): Promise<{ created: boolean; userId: string; tenantId?: string }> {
-  const email = emailSchema.parse(input.email);
-  const policy = validatePasswordPolicy(input.password, email);
+  resetPassword?: boolean;
+}): Promise<BootstrapResult> {
+  const email = emailSchema.parse(input.email.trim());
+  const password = input.password.trim(); // espacios al pegar en el panel = casi siempre accidentales
+  const policy = validatePasswordPolicy(password, email);
   if (policy) throw validation(`ADMIN_INITIAL_PASSWORD: ${policy}`);
 
+  const { createTenantWithOwner, listUserTenants } = await import("./tenants");
   const existing = await prisma.user.findUnique({ where: { email } });
-  if (existing) return { created: false, userId: existing.id };
 
-  const user = await prisma.user.create({
-    data: {
-      email,
-      name: input.name ?? "Administrador",
-      emailVerified: new Date(),
-      passwordHash: await hashPassword(input.password),
-      passwordChangedAt: new Date(),
-    },
+  if (!existing) {
+    const user = await prisma.user.create({
+      data: {
+        email,
+        name: input.name ?? "Administrador",
+        emailVerified: new Date(),
+        passwordHash: await hashPassword(password),
+        passwordChangedAt: new Date(),
+      },
+    });
+    const { tenant } = await createTenantWithOwner(
+      { userId: user.id, email },
+      { name: input.companyName ?? "Empresa de pruebas" },
+      { planCode: "PROFESIONAL", trialDays: 30 },
+    );
+    return { status: "created", userId: user.id, tenantId: tenant.id };
+  }
+
+  // Asegura que tenga al menos una empresa donde entrar.
+  let tenantId = (await listUserTenants(existing.id))[0]?.tenantId;
+  if (!tenantId) {
+    tenantId = (
+      await createTenantWithOwner(
+        { userId: existing.id, email },
+        { name: input.companyName ?? "Empresa de pruebas" },
+        { planCode: "PROFESIONAL", trialDays: 30 },
+      )
+    ).tenant.id;
+  }
+
+  const action = !existing.passwordHash ? "password_set" : input.resetPassword ? "password_reset" : "unchanged";
+  if (action === "unchanged") return { status: "unchanged", userId: existing.id, tenantId };
+
+  const passwordHash = await hashPassword(password);
+  await withContext({ userId: existing.id }, async (tx) => {
+    await tx.user.update({
+      where: { id: existing.id },
+      data: { passwordHash, passwordChangedAt: new Date(), disabledAt: null },
+    });
+    const revoked = action === "password_reset" ? await tx.session.deleteMany({ where: { userId: existing.id } }) : { count: 0 };
+    await recordAudit(tx, {
+      tenantId: null,
+      actorUserId: existing.id,
+      action: action === "password_reset" ? "auth.admin_password_reset_by_deploy" : "auth.admin_password_set_by_deploy",
+      entityType: "User",
+      entityId: existing.id,
+      metadata: { origen: "despliegue", sessionsRevoked: revoked.count },
+    });
   });
-  const { createTenantWithOwner } = await import("./tenants");
-  const { tenant } = await createTenantWithOwner(
-    { userId: user.id, email },
-    { name: input.companyName ?? "Empresa de pruebas" },
-    { planCode: "PROFESIONAL", trialDays: 30 },
-  );
-  return { created: true, userId: user.id, tenantId: tenant.id };
+  return { status: action, userId: existing.id, tenantId };
 }
