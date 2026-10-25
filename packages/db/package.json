@@ -17,7 +17,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@prisma/client": "6.19.3"
+    "@prisma/client": "7.10.1"
   },
   "devDependencies": {
     "@rc/config": "workspace:*",
