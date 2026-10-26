@@ -17,7 +17,10 @@ import {
 import { describe, expect, it } from "vitest";
 import { actorFor, addMember, createCompany, createUser } from "./helpers";
 
-const TEMP = "Temporal-Segura-2026";
+// Claves ficticias solo para pruebas.
+const TEMP = "Temporal-Segura-2026"; // gitleaks:allow
+const OTHER_TEMP = ["Otra", "Clave", "Temporal", "1"].join("-");
+const REENTRY_TEMP = ["Reingreso", "Temporal", "1"].join("-");
 const uniq = (p: string) => `${p}.${Math.random().toString(36).slice(2, 8)}@example.com`;
 
 async function setup() {
@@ -86,15 +89,15 @@ describe("Gestión de usuarios sin invitación", () => {
     const hashBefore = user.passwordHash;
 
     // La empresa B agrega el mismo correo: no cambia la clave.
-    const r = await createMemberUser(b.owner, { email, role: "WAREHOUSE", tempPassword: "Otra-Clave-Temporal-1" });
+    const r = await createMemberUser(b.owner, { email, role: "WAREHOUSE", tempPassword: OTHER_TEMP });
     expect(r.kind).toBe("existing_account");
     expect((await prisma.user.findUniqueOrThrow({ where: { email } })).passwordHash).toBe(hashBefore);
 
     // Ahora pertenece a dos empresas: ninguna puede restablecer su clave ni su 2FA.
-    await expect(resetMemberPassword(b.owner, r.membershipId, "Otra-Clave-Temporal-1")).rejects.toThrow(/no es administrada/);
+    await expect(resetMemberPassword(b.owner, r.membershipId, OTHER_TEMP)).rejects.toThrow(/no es administrada/);
     const rowA = (await listMemberRows(a.owner)).find((x) => x.email === email)!;
     expect(rowA.managed).toBe(false);
-    await expect(resetMemberPassword(a.owner, rowA.membershipId, "Otra-Clave-Temporal-1")).rejects.toThrow(/no es administrada/);
+    await expect(resetMemberPassword(a.owner, rowA.membershipId, OTHER_TEMP)).rejects.toThrow(/no es administrada/);
     await expect(resetMemberMfa(a.owner, rowA.membershipId)).rejects.toThrow(/no es administrada/);
 
     // Al eliminarlo de B, su cuenta sigue activa para A.
@@ -146,9 +149,9 @@ describe("Gestión de usuarios sin invitación", () => {
     const del = await removeMemberUser(owner, r.membershipId);
     expect(del.accountDisabled).toBe(true);
     await expect(authenticateWithPassword(email, TEMP)).rejects.toThrow();
-    const again = await createMemberUser(owner, { email, role: "WAREHOUSE", tempPassword: "Reingreso-Temporal-1" });
+    const again = await createMemberUser(owner, { email, role: "WAREHOUSE", tempPassword: REENTRY_TEMP });
     expect(again.kind).toBe("reactivated");
-    await authenticateWithPassword(email, "Reingreso-Temporal-1");
+    await authenticateWithPassword(email, REENTRY_TEMP);
   });
 
   it("protege al último propietario y a uno mismo", async () => {

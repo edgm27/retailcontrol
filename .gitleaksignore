@@ -1,3 +1,5 @@
 # Falsos positivos revisados: vector público de prueba del RFC 6238 (no es un secreto).
 054c6aeca15532d423a0e699928bf9d0128c4250:packages/domain/test/security.test.ts:generic-api-key:75
 7844fb621827fc331a221be286f877f222ac124a:packages/domain/src/security/password.ts:generic-api-key:46
+cf95e85e7e36dc793dcd48e11899e9069ee793df:tests/integration/user-admin.test.ts:generic-api-key:89
+cf95e85e7e36dc793dcd48e11899e9069ee793df:tests/integration/user-admin.test.ts:generic-api-key:149
