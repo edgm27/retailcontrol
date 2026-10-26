@@ -28,24 +28,30 @@ enum PlatformRole {
 }
 
 model User {
-  id                String       @id @default(uuid()) @db.Uuid
-  name              String?
-  email             String       @unique
-  emailVerified     DateTime?    @map("email_verified")
-  image             String?
-  platformRole      PlatformRole @default(NONE) @map("platform_role")
+  id                 String       @id @default(uuid()) @db.Uuid
+  name               String?
+  email              String       @unique
+  emailVerified      DateTime?    @map("email_verified")
+  image              String?
+  platformRole       PlatformRole @default(NONE) @map("platform_role")
   // Hash scrypt de la contraseña (null = solo acceso por Google / enlace mágico).
-  passwordHash      String?      @map("password_hash")
-  passwordChangedAt DateTime?    @map("password_changed_at")
-  disabledAt        DateTime?    @map("disabled_at")
-  createdAt         DateTime     @default(now()) @map("created_at")
-  updatedAt         DateTime     @updatedAt @map("updated_at")
+  passwordHash       String?      @map("password_hash")
+  passwordChangedAt  DateTime?    @map("password_changed_at")
+  // Clave temporal asignada por un administrador: debe cambiarse en el próximo ingreso.
+  mustChangePassword Boolean      @default(false) @map("must_change_password")
+  // Empresa que creó y administra la cuenta (puede restablecer su clave/2FA mientras
+  // la persona no pertenezca a otra empresa). Null = cuenta creada por la propia persona.
+  managedByTenantId  String?      @map("managed_by_tenant_id") @db.Uuid
+  disabledAt         DateTime?    @map("disabled_at")
+  createdAt          DateTime     @default(now()) @map("created_at")
+  updatedAt          DateTime     @updatedAt @map("updated_at")
 
-  accounts      Account[]
-  sessions      Session[]
-  memberships   Membership[]
-  mfaTotp       MfaTotp?
-  recoveryCodes RecoveryCode[]
+  accounts        Account[]
+  sessions        Session[]
+  memberships     Membership[]
+  managedByTenant Tenant?        @relation("ManagedUsers", fields: [managedByTenantId], references: [id], onDelete: SetNull)
+  mfaTotp         MfaTotp?
+  recoveryCodes   RecoveryCode[]
 
   @@map("users")
 }
@@ -190,6 +196,7 @@ model Tenant {
   updatedAt DateTime     @updatedAt @map("updated_at")
 
   settings     TenantSettings?
+  managedUsers User[]          @relation("ManagedUsers")
   memberships  Membership[]
   branches     Branch[]
   warehouses   Warehouse[]
@@ -238,14 +245,16 @@ enum MembershipStatus {
 }
 
 model Membership {
-  id        String           @id @default(uuid()) @db.Uuid
-  tenantId  String           @map("tenant_id") @db.Uuid
-  userId    String           @map("user_id") @db.Uuid
-  role      TenantRole
-  status    MembershipStatus @default(ACTIVE)
+  id          String           @id @default(uuid()) @db.Uuid
+  tenantId    String           @map("tenant_id") @db.Uuid
+  userId      String           @map("user_id") @db.Uuid
+  role        TenantRole
+  status      MembershipStatus @default(ACTIVE)
+  // 2FA exigida por un administrador para este usuario en esta empresa.
+  mfaRequired Boolean          @default(false) @map("mfa_required")
   // Sin filas en membership_branches = acceso a todas las sucursales.
-  createdAt DateTime         @default(now()) @map("created_at")
-  updatedAt DateTime         @updatedAt @map("updated_at")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
 
   tenant   Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   user     User               @relation(fields: [userId], references: [id], onDelete: Cascade)

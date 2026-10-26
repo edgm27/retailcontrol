@@ -42,9 +42,9 @@ export async function isMfaMandatory(userId: string): Promise<boolean> {
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { platformRole: true } });
   if (user && user.platformRole !== "NONE") return true;
   const roles = await withContext({ userId }, (tx) =>
-    tx.membership.findMany({ where: { userId, status: "ACTIVE" }, select: { role: true } }),
+    tx.membership.findMany({ where: { userId, status: "ACTIVE" }, select: { role: true, mfaRequired: true } }),
   );
-  return roles.some((r) => roleRequiresMfa(r.role as Role));
+  return roles.some((r) => r.mfaRequired || roleRequiresMfa(r.role as Role));
 }
 
 /**

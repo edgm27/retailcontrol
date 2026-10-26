@@ -18,7 +18,7 @@ export function EnrollmentPanel({
   enrollment,
 }: {
   action: (s: ClientFormState<Data>, fd: FormData) => Promise<ClientFormState<Data>>;
-  enrollment: { qr: string; secret: string; grouped: string } | null;
+  enrollment: { qr: string; secret: string; grouped: string; link: string } | null;
 }) {
   const [state, formAction, pending] = useActionState(action, { ok: false } as ClientFormState<Data>);
 
@@ -53,8 +53,14 @@ export function EnrollmentPanel({
         height={220}
         className="mx-auto rounded border"
       />
+      <div className="grid gap-2 text-center">
+        <span className="text-sm text-muted-foreground">¿Está en el teléfono donde tiene la app?</span>
+        <a href={enrollment.link} className={buttonVariants({ variant: "outline" })} data-testid="totp-link">
+          Abrir en Google Authenticator
+        </a>
+      </div>
       <div className="grid gap-1 text-sm">
-        <span className="text-muted-foreground">¿No puede escanear? Escriba esta clave manualmente:</span>
+        <span className="text-muted-foreground">¿No puede escanear ni abrir el enlace? Escriba esta clave manualmente en la app:</span>
         <code
           className="select-all break-all rounded bg-muted px-2 py-1 font-mono"
           data-testid="totp-secret"

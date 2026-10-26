@@ -27,6 +27,8 @@ export interface SessionContext {
   platformRole: "NONE" | "SUPPORT" | "SUPERADMIN";
   mfaVerified: boolean;
   activeTenantId: string | null;
+  /** Clave temporal asignada por un administrador: debe cambiarse antes de seguir. */
+  mustChangePassword: boolean;
 }
 
 export const getRequestMeta = cache(async (): Promise<RequestMeta> => {
@@ -59,6 +61,7 @@ export const getSession = cache(async (): Promise<SessionContext | null> => {
     platformRole: s.user.platformRole,
     mfaVerified: s.mfaVerifiedAt !== null,
     activeTenantId: s.activeTenantId,
+    mustChangePassword: s.user.mustChangePassword,
   };
 });
 
@@ -82,10 +85,11 @@ export interface VerifiedUser extends SessionContext {
  * - Si el usuario tiene MFA configurado, la sesión debe estar verificada.
  * - Los roles de plataforma deben tener MFA configurado siempre.
  */
-export async function requireVerifiedUser(): Promise<VerifiedUser> {
+export async function requireVerifiedUser(opts: { allowPendingPasswordChange?: boolean } = {}): Promise<VerifiedUser> {
   const s = await requireSession();
   const mfa = await getMfaStatus(s.userId);
   if (mfa.enrolled && !s.mfaVerified) redirect("/mfa/verificar");
+  if (s.mustChangePassword && !opts.allowPendingPasswordChange) redirect("/cuenta/cambiar-clave");
   if (!mfa.enrolled && s.platformRole !== "NONE") redirect("/mfa/configurar?motivo=plataforma");
   return { ...s, mfaEnrolled: mfa.enrolled };
 }

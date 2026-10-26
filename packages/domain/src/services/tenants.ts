@@ -135,7 +135,7 @@ export async function resolveTenantAccess(
       membershipId: m.id,
       role,
       branchIds: branches.map((b) => b.branchId),
-      mfaRequired: roleRequiresMfa(role, settings?.mfaRequiredForAll ?? false),
+      mfaRequired: m.mfaRequired || roleRequiresMfa(role, settings?.mfaRequiredForAll ?? false),
       accessMode: subscriptionAccessMode(subscription, now),
     };
   });

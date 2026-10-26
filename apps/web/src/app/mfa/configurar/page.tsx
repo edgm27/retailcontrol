@@ -15,12 +15,13 @@ export default async function ConfigureMfaPage({ searchParams }: { searchParams:
   const s = await requireSession();
   const status = await getMfaStatus(s.userId);
   if (status.enrolled && !s.mfaVerified) redirect("/mfa/verificar");
+  if (s.mustChangePassword) redirect("/cuenta/cambiar-clave");
 
-  let enrollment: { qr: string; secret: string; grouped: string } | null = null;
+  let enrollment: { qr: string; secret: string; grouped: string; link: string } | null = null;
   if (!status.enrolled) {
     const { secret, otpauthUrl } = await beginTotpEnrollment(await toUserActor(s));
     const qr = await QRCode.toDataURL(otpauthUrl, { margin: 1, width: 220, errorCorrectionLevel: "M" });
-    enrollment = { qr, secret, grouped: secret.match(/.{1,4}/g)?.join(" ") ?? secret };
+    enrollment = { qr, secret, grouped: secret.match(/.{1,4}/g)?.join(" ") ?? secret, link: otpauthUrl };
   }
 
   return (
@@ -29,7 +30,8 @@ export default async function ConfigureMfaPage({ searchParams }: { searchParams:
         <CardHeader>
           <CardTitle>Verificación en dos pasos</CardTitle>
           <CardDescription>
-            Escanee el código con Google Authenticator u otra app compatible (TOTP) y escriba el código que muestra.
+            Vincule Google Authenticator (u otra app compatible): escanee el código QR desde otro dispositivo o, si está en
+            el teléfono, toque «Abrir en Google Authenticator». Luego escriba el código de 6 dígitos que muestra la app.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-5">
@@ -37,7 +39,7 @@ export default async function ConfigureMfaPage({ searchParams }: { searchParams:
             <Alert variant="warning">
               {motivo === "plataforma"
                 ? "Las cuentas de plataforma requieren verificación en dos pasos."
-                : "Su rol requiere verificación en dos pasos para continuar."}
+                : "Su empresa requiere verificación en dos pasos para su usuario. Configúrela para continuar."}
             </Alert>
           )}
           <EnrollmentPanel action={confirmEnrollmentAction} enrollment={enrollment} />

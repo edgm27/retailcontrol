@@ -2,6 +2,25 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versionado semántico.
 
+## [0.7.0] — 2026-10-26 — Usuarios con clave temporal y 2FA administrada
+
+### Añadido
+- Módulo Usuarios sin invitaciones: crear (correo, nombre, rol, clave temporal con generador), editar
+  (nombre, rol, estado), asignar nueva clave temporal y eliminar. Los datos de acceso se muestran una sola vez
+  con botón para copiarlos.
+- Cambio de clave obligatorio en el primer ingreso (`/cuenta/cambiar-clave`); la nueva debe ser distinta.
+- Activar/desactivar la verificación en dos pasos por usuario. Al activarla, en su próximo ingreso el usuario
+  vincula Google Authenticator con código QR o con el enlace «Abrir en Google Authenticator» (desde el teléfono).
+  Desactivarla desvincula la app y cierra sus sesiones.
+- Columna de 2FA (activa / pendiente / inactiva) y de clave (temporal / personal) en la lista.
+
+### Seguridad
+- Solo se restablecen clave o 2FA de cuentas creadas por la empresa y que no pertenecen a otra; si el correo ya
+  tenía cuenta propia se agrega sin tocar su clave. Todo queda auditado. Pruebas de integración y E2E.
+
+### Corregido
+- Alineación de campos en formularios de dos columnas.
+
 ## [0.6.0] — 2026-10-26 — Tablero de indicadores y nueva imagen
 
 ### Añadido

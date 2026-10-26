@@ -56,3 +56,11 @@ Leyenda: ✔ permitido · — denegado.
 - ¿El almacenista debe poder registrar mermas sin aprobación? (Hoy: mermas = `inventory.adjust`, que no tiene.)
 - ¿El comprador puede crear productos nuevos al cargar una orden? (Hoy: no.)
 - Ver [open-questions.md](open-questions.md).
+
+
+### Gestión de usuarios (v0.7.0)
+
+`members.manage` (Propietario y Administrador) permite crear usuarios con clave temporal, cambiar rol y estado,
+activar/desactivar la 2FA (Google Authenticator), asignar una nueva clave temporal y eliminar usuarios.
+Un Administrador no puede crear, modificar ni eliminar Propietarios. Nadie puede cambiar su propio rol,
+desactivarse ni eliminarse; la empresa siempre conserva al menos un Propietario activo.

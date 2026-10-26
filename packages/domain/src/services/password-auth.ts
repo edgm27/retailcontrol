@@ -105,21 +105,24 @@ export async function setPassword(
   const policy = validatePasswordPolicy(input.next, actor.email);
   if (policy) throw validation(policy);
 
-  const user = await prisma.user.findUnique({ where: { id: actor.userId }, select: { passwordHash: true } });
+  const user = await prisma.user.findUnique({ where: { id: actor.userId }, select: { passwordHash: true, mustChangePassword: true } });
   if (!user) throw forbidden();
   if (user.passwordHash) {
     if (!input.current || !(await verifyPassword(input.current, user.passwordHash))) {
-      throw validation("La contraseña actual no es correcta.");
+      throw validation(user.mustChangePassword ? "La clave temporal no es correcta." : "La contraseña actual no es correcta.");
+    }
+    if (await verifyPassword(input.next, user.passwordHash)) {
+      throw validation("La nueva contraseña debe ser distinta de la actual.");
     }
   }
   const passwordHash = await hashPassword(input.next);
   return withContext({ userId: actor.userId }, async (tx) => {
-    await tx.user.update({ where: { id: actor.userId }, data: { passwordHash, passwordChangedAt: new Date() } });
+    await tx.user.update({ where: { id: actor.userId }, data: { passwordHash, passwordChangedAt: new Date(), mustChangePassword: false } });
     const revoked = await tx.session.deleteMany({ where: { userId: actor.userId, id: { not: actor.sessionId } } });
     await recordAudit(tx, {
       tenantId: null,
       actorUserId: actor.userId,
-      action: user.passwordHash ? "auth.password_changed" : "auth.password_set",
+      action: user.mustChangePassword ? "auth.temporary_password_replaced" : user.passwordHash ? "auth.password_changed" : "auth.password_set",
       entityType: "User",
       entityId: actor.userId,
       metadata: { otherSessionsRevoked: revoked.count },

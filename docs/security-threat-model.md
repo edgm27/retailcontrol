@@ -42,6 +42,8 @@ SMTP · Operadores de plataforma ↔ datos de empresas · CI/CD ↔ repositorio 
 | T18 | Divulgación | Fuga por exportaciones o jobs | Jobs con contexto por empresa (probado) | B | Exportaciones F5 con URL firmada y verificación de membresía |
 | T19 | Pérdida de datos | Borrado accidental / ransomware | Respaldo cifrado + prueba de restauración automatizada | M | PITR del proveedor, copia fuera de la cuenta principal, simulacros trimestrales |
 | T20 | Manipulación | Reescritura de documentos históricos con la tasa actual (F3) | Diseño: tasa congelada en el documento | — | Implementar en F3 con pruebas |
+| T21 | Suplantación / elevación | Una empresa restablece la clave o la 2FA de una cuenta que también usa otra empresa | Solo cuentas administradas (`managed_by_tenant_id` = empresa y sin otras membresías); clave temporal con cambio obligatorio; sesiones cerradas; auditoría | B | Notificar por correo al usuario cuando se restablece su clave |
+| T22 | Divulgación | Clave temporal visible para el administrador | Se muestra una sola vez, no se guarda en claro ni se registra; debe cambiarse en el primer ingreso | B | Opción de enviar enlace de un solo uso en vez de clave |
 
 ## 4. Recuperación de acceso (procedimiento propuesto)
 

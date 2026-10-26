@@ -14,6 +14,7 @@ export * from "./services/entitlements";
 export * from "./services/rate-limit";
 export * from "./services/tenants";
 export * from "./services/members";
+export * from "./services/user-admin";
 export * from "./services/branches";
 export * from "./services/products";
 export * from "./services/mfa";

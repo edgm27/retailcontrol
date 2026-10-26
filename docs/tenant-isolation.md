@@ -85,4 +85,22 @@ banner visible y auditado. Hasta entonces, la plataforma no tiene ningún camino
 - usuario en dos empresas con roles distintos actúa según el contexto; sin membresía → sin acceso;
 - la empresa no puede modificar su propia suscripción;
 - un usuario no ve invitaciones ni factores MFA de otro;
+- otra empresa no puede ver, modificar, restablecer ni eliminar usuarios ajenos (`user-admin.test.ts`);
 - `rc_app` no es superusuario, no tiene BYPASSRLS, no es dueño de tablas y no lee `_prisma_migrations`.
+
+
+## Usuarios creados por la empresa (v0.7.0)
+
+Las cuentas de usuario (`users`) son globales: una persona puede pertenecer a varias empresas. El
+propietario/administrador crea usuarios con **clave temporal** (sin invitación). Para que una empresa no pueda
+tomar el control de una cuenta ajena:
+
+- `users.managed_by_tenant_id` marca la empresa que creó la cuenta. Solo esa empresa puede **restablecer la clave**,
+  **desvincular la 2FA** o **deshabilitar la cuenta**, y solo mientras la persona **no pertenezca a otra empresa**.
+- Si el correo ya tenía cuenta propia, se agrega la membresía **sin tocar su clave** ni su 2FA.
+- Eliminar quita la membresía (el historial se conserva); si la cuenta era administrada, queda deshabilitada y sin clave.
+- Lecturas/escrituras acotadas fuera del contexto de la empresa, hechas en el servidor solo tras validar el permiso
+  `members.manage` y la membresía del objetivo: conteo de membresías del objetivo (contexto del propio usuario) y
+  lectura/borrado de `mfa_totp`/`recovery_codes` de miembros (contexto de plataforma). Todo queda en auditoría
+  (`member.user_created`, `member.updated`, `member.password_reset`, `member.mfa_reset`, `member.removed`).
+- La exigencia de 2FA por usuario vive en `memberships.mfa_required` (RLS de la empresa).
