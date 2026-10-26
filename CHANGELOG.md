@@ -2,6 +2,14 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versionado semántico.
 
+## [0.8.1] — 2026-10-26
+
+### Corregido
+- Celular: el menú lateral no se veía al tocar el botón superior izquierdo (quedaba recortado dentro de la barra
+  superior). Ahora se abre a pantalla completa con todas las secciones, bloquea el desplazamiento de fondo y el
+  botón muestra la palabra «Menú». Prueba E2E que verifica el alto del menú y sus opciones.
+- Logo del menú en celular aplastado.
+
 ## [0.8.0] — 2026-10-26 — Fase 4: comercialización
 
 ### Añadido

@@ -41,7 +41,18 @@ test("propietario: registro → empresa → MFA obligatorio → recuperación �
   await expect(page.getByTestId("active-tenant")).toContainText("Abastos E2E · Propietario");
   // En móvil el menú lateral se abre con el botón de menú.
   await page.getByRole("button", { name: "Abrir menú" }).click();
-  await page.getByRole("dialog", { name: "Menú" }).getByRole("link", { name: "Productos", exact: true }).click();
+  const menu = page.getByRole("dialog", { name: "Menú" });
+  // El menú debe ocupar el alto de la pantalla y mostrar todas las secciones (no quedar recortado).
+  const box = await menu.boundingBox();
+  expect(box!.height).toBeGreaterThan(page.viewportSize()!.height * 0.9);
+  for (const name of ["Inicio", "Alertas", "Inventario", "Productos"]) {
+    await expect(menu.getByRole("link", { name, exact: true })).toBeInViewport();
+  }
+  // Las últimas opciones se alcanzan desplazando el menú.
+  const last = menu.getByRole("link", { name: "Suscripción", exact: true });
+  await last.scrollIntoViewIfNeeded();
+  await expect(last).toBeInViewport();
+  await menu.getByRole("link", { name: "Productos", exact: true }).click();
   await expect(page.getByRole("dialog", { name: "Menú" })).toBeHidden();
   await page.getByLabel("SKU", { exact: true }).fill("harina-1kg");
   await page.getByLabel("Nombre", { exact: true }).fill("Harina 1 kg");

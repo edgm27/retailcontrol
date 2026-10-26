@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { NAV_ICONS, type NavIcon } from "./nav-icons";
 
 export interface NavGroup {
@@ -69,7 +70,13 @@ export function MobileNav({ groups, header }: { groups: NavGroup[]; header: Reac
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    // Evita que la página de fondo se desplace mientras el menú está abierto.
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
   }, [open]);
   const Menu = NAV_ICONS.menu;
   const Close = NAV_ICONS.close;
@@ -78,13 +85,16 @@ export function MobileNav({ groups, header }: { groups: NavGroup[]; header: Reac
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex size-10 items-center justify-center rounded-xl text-white hover:bg-white/10 lg:hidden"
+        className="inline-flex h-10 items-center gap-2 rounded-xl px-3 text-white hover:bg-white/10 lg:hidden"
         aria-label="Abrir menú"
         aria-expanded={open}
       >
         <Menu />
+        <span className="text-sm font-semibold">Menú</span>
       </button>
-      {open && (
+      {/* El menú se monta en <body>: la barra superior usa desenfoque (backdrop-filter), que
+          limitaría un elemento "fixed" a su propia altura y lo dejaría oculto. */}
+      {open && typeof document !== "undefined" && createPortal(
         <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Menú">
           <button type="button" aria-label="Cerrar menú" className="absolute inset-0 bg-[#061423]/60" onClick={() => setOpen(false)} />
           <div className="sidebar-bg absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col gap-6 overflow-y-auto p-4 shadow-2xl">
@@ -96,7 +106,8 @@ export function MobileNav({ groups, header }: { groups: NavGroup[]; header: Reac
             </div>
             <NavList groups={groups} onNavigate={() => setOpen(false)} />
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   );

@@ -58,7 +58,7 @@ export const IconLog = (p: SVGProps<SVGSVGElement>) => (
 export function Logo({ className, compact = false }: { className?: string; compact?: boolean }) {
   return (
     <span className={`inline-flex items-center gap-2.5 ${className ?? ""}`}>
-      <svg width={compact ? 28 : 34} height={compact ? 28 : 34} viewBox="0 0 34 34" aria-hidden>
+      <svg width={compact ? 28 : 34} height={compact ? 28 : 34} viewBox="0 0 34 34" aria-hidden className="shrink-0">
         <defs>
           <linearGradient id="rc-g" x1="0" y1="1" x2="1" y2="0">
             <stop offset="0" stopColor="#1fb7d6" />
