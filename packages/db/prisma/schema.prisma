@@ -211,6 +211,9 @@ model TenantSettings {
   allowNegativeStock          Boolean  @default(false) @map("allow_negative_stock")
   // Ajustes de inventario sobre este valor (en moneda base) requieren aprobación.
   adjustmentApprovalThreshold Decimal  @default(100) @map("adjustment_approval_threshold") @db.Decimal(18, 2)
+  // Días de anticipación de las alertas de vencimiento.
+  expiryAlertDays             Int[]    @default([7, 15, 30, 60, 90]) @map("expiry_alert_days")
+  alertEmailEnabled           Boolean  @default(false) @map("alert_email_enabled")
   createdAt                   DateTime @default(now()) @map("created_at")
   updatedAt                   DateTime @updatedAt @map("updated_at")
 
@@ -315,15 +318,17 @@ model Warehouse {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  tenant        Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant         Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   // FK compuesta: el almacén solo puede colgar de una sucursal de su misma empresa.
-  branch        Branch            @relation(fields: [tenantId, branchId], references: [tenantId, id], onDelete: Restrict)
-  movements     StockMovement[]
-  balances      StockBalance[]
-  adjustments   StockAdjustment[]
-  counts        StockCount[]
-  transfersFrom Transfer[]        @relation("TransferFrom")
-  transfersTo   Transfer[]        @relation("TransferTo")
+  branch         Branch            @relation(fields: [tenantId, branchId], references: [tenantId, id], onDelete: Restrict)
+  movements      StockMovement[]
+  balances       StockBalance[]
+  adjustments    StockAdjustment[]
+  counts         StockCount[]
+  purchaseOrders PurchaseOrder[]
+  receipts       GoodsReceipt[]
+  transfersFrom  Transfer[]        @relation("TransferFrom")
+  transfersTo    Transfer[]        @relation("TransferTo")
 
   @@unique([tenantId, code])
   @@unique([tenantId, id])
@@ -339,30 +344,37 @@ enum ProductStatus {
 }
 
 model Product {
-  id             String        @id @default(uuid()) @db.Uuid
-  tenantId       String        @map("tenant_id") @db.Uuid
-  sku            String
-  name           String
-  status         ProductStatus @default(ACTIVE)
+  id                  String        @id @default(uuid()) @db.Uuid
+  tenantId            String        @map("tenant_id") @db.Uuid
+  sku                 String
+  name                String
+  status              ProductStatus @default(ACTIVE)
   // Unidad base (código del catálogo de unidades en packages/domain/src/units.ts).
-  baseUnit       String        @default("UND") @map("base_unit")
-  lotTracking    Boolean       @default(false) @map("lot_tracking")
-  requiresExpiry Boolean       @default(false) @map("requires_expiry")
-  minStock       Decimal?      @map("min_stock") @db.Decimal(20, 6)
+  baseUnit            String        @default("UND") @map("base_unit")
+  lotTracking         Boolean       @default(false) @map("lot_tracking")
+  requiresExpiry      Boolean       @default(false) @map("requires_expiry")
+  minStock            Decimal?      @map("min_stock") @db.Decimal(20, 6)
+  // Precio de referencia de venta (informativo; no es facturación).
+  referencePrice      Decimal?      @map("reference_price") @db.Decimal(20, 2)
+  referenceCurrency   Currency?     @map("reference_currency")
+  preferredSupplierId String?       @map("preferred_supplier_id") @db.Uuid
   // Costo promedio ponderado en la moneda base de la empresa (valoración).
-  avgCost        Decimal       @default(0) @map("avg_cost") @db.Decimal(20, 6)
-  createdAt      DateTime      @default(now()) @map("created_at")
-  updatedAt      DateTime      @updatedAt @map("updated_at")
+  avgCost             Decimal       @default(0) @map("avg_cost") @db.Decimal(20, 6)
+  createdAt           DateTime      @default(now()) @map("created_at")
+  updatedAt           DateTime      @updatedAt @map("updated_at")
 
-  tenant        Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  units         ProductUnit[]
-  barcodes      ProductBarcode[]
-  lots          Lot[]
-  movements     StockMovement[]
-  balances      StockBalance[]
-  adjustments   StockAdjustment[]
-  countLines    StockCountLine[]
-  transferLines TransferLine[]
+  tenant            Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  units             ProductUnit[]
+  barcodes          ProductBarcode[]
+  lots              Lot[]
+  movements         StockMovement[]
+  balances          StockBalance[]
+  adjustments       StockAdjustment[]
+  countLines        StockCountLine[]
+  transferLines     TransferLine[]
+  preferredSupplier Supplier?           @relation(fields: [preferredSupplierId], references: [id], onDelete: SetNull)
+  purchaseLines     PurchaseOrderLine[]
+  receiptLines      GoodsReceiptLine[]
 
   @@unique([tenantId, sku])
   @@unique([tenantId, id])
@@ -647,6 +659,218 @@ model TransferLine {
 
   @@index([tenantId, transferId])
   @@map("transfer_lines")
+}
+
+// ─────────────────────────────── Compras y moneda (Fase 3) ──────────────────
+
+model Supplier {
+  id               String   @id @default(uuid()) @db.Uuid
+  tenantId         String   @map("tenant_id") @db.Uuid
+  name             String
+  legalName        String?  @map("legal_name")
+  rif              String?
+  contactName      String?  @map("contact_name")
+  email            String?
+  phone            String?
+  address          String?
+  paymentTermsDays Int?     @map("payment_terms_days")
+  notes            String?
+  active           Boolean  @default(true)
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  purchaseOrders PurchaseOrder[]
+  receipts       GoodsReceipt[]
+  products       Product[]
+
+  @@unique([tenantId, rif])
+  @@unique([tenantId, id])
+  @@index([tenantId, name])
+  @@map("suppliers")
+}
+
+enum ExchangeRateSource {
+  BCV_MANUAL
+  BCV_AUTO
+  INTERNAL
+}
+
+// Tasa VES por 1 USD. Solo inserción: una corrección es un registro nuevo.
+model ExchangeRate {
+  id              String             @id @default(uuid()) @db.Uuid
+  tenantId        String             @map("tenant_id") @db.Uuid
+  rate            Decimal            @db.Decimal(20, 8)
+  effectiveDate   DateTime           @map("effective_date") @db.Date
+  source          ExchangeRateSource @default(BCV_MANUAL)
+  sourceReference String?            @map("source_reference")
+  createdById     String?            @map("created_by_id") @db.Uuid
+  createdAt       DateTime           @default(now()) @map("created_at")
+
+  purchaseOrders PurchaseOrder[]
+  receipts       GoodsReceipt[]
+
+  @@unique([tenantId, id])
+  @@index([tenantId, effectiveDate(sort: Desc), createdAt(sort: Desc)])
+  @@map("exchange_rates")
+}
+
+model TaxRate {
+  id        String    @id @default(uuid()) @db.Uuid
+  tenantId  String    @map("tenant_id") @db.Uuid
+  code      String
+  name      String
+  rate      Decimal   @db.Decimal(7, 4)
+  validFrom DateTime  @map("valid_from") @db.Date
+  validTo   DateTime? @map("valid_to") @db.Date
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@unique([tenantId, code])
+  @@map("tax_rates")
+}
+
+enum PurchaseOrderStatus {
+  DRAFT
+  APPROVED
+  PARTIALLY_RECEIVED
+  RECEIVED
+  CANCELLED
+}
+
+model PurchaseOrder {
+  id             String              @id @default(uuid()) @db.Uuid
+  tenantId       String              @map("tenant_id") @db.Uuid
+  number         Int
+  supplierId     String              @map("supplier_id") @db.Uuid
+  warehouseId    String              @map("warehouse_id") @db.Uuid
+  status         PurchaseOrderStatus @default(DRAFT)
+  currency       Currency
+  // Tasa congelada al aprobar (si la moneda difiere de la base).
+  exchangeRateId String?             @map("exchange_rate_id") @db.Uuid
+  exchangeRate   Decimal?            @map("exchange_rate") @db.Decimal(20, 8)
+  expectedDate   DateTime?           @map("expected_date") @db.Date
+  notes          String?
+  subtotal       Decimal             @default(0) @db.Decimal(20, 2)
+  taxTotal       Decimal             @default(0) @map("tax_total") @db.Decimal(20, 2)
+  total          Decimal             @default(0) @db.Decimal(20, 2)
+  createdById    String              @map("created_by_id") @db.Uuid
+  approvedById   String?             @map("approved_by_id") @db.Uuid
+  approvedAt     DateTime?           @map("approved_at")
+  closedAt       DateTime?           @map("closed_at")
+  createdAt      DateTime            @default(now()) @map("created_at")
+  updatedAt      DateTime            @updatedAt @map("updated_at")
+
+  supplier   Supplier            @relation(fields: [tenantId, supplierId], references: [tenantId, id], onDelete: Restrict)
+  warehouse  Warehouse           @relation(fields: [tenantId, warehouseId], references: [tenantId, id], onDelete: Restrict)
+  rateRecord ExchangeRate?       @relation(fields: [exchangeRateId], references: [id], onDelete: Restrict)
+  lines      PurchaseOrderLine[]
+  receipts   GoodsReceipt[]
+
+  @@unique([tenantId, number])
+  @@unique([tenantId, id])
+  @@index([tenantId, status])
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderLine {
+  id               String  @id @default(uuid()) @db.Uuid
+  tenantId         String  @map("tenant_id") @db.Uuid
+  purchaseOrderId  String  @map("purchase_order_id") @db.Uuid
+  productId        String  @map("product_id") @db.Uuid
+  // Cantidad pedida en unidad base y como se ingresó.
+  quantity         Decimal @db.Decimal(20, 6)
+  enteredQuantity  Decimal @map("entered_quantity") @db.Decimal(20, 6)
+  enteredUnit      String  @map("entered_unit")
+  // Precio por unidad INGRESADA, en la moneda de la orden.
+  unitPrice        Decimal @map("unit_price") @db.Decimal(20, 6)
+  taxRate          Decimal @default(0) @map("tax_rate") @db.Decimal(7, 4)
+  receivedQuantity Decimal @default(0) @map("received_quantity") @db.Decimal(20, 6)
+
+  purchaseOrder PurchaseOrder      @relation(fields: [tenantId, purchaseOrderId], references: [tenantId, id], onDelete: Cascade)
+  product       Product            @relation(fields: [tenantId, productId], references: [tenantId, id], onDelete: Restrict)
+  receiptLines  GoodsReceiptLine[]
+
+  @@unique([tenantId, id])
+  @@index([tenantId, purchaseOrderId])
+  @@map("purchase_order_lines")
+}
+
+model GoodsReceipt {
+  id               String   @id @default(uuid()) @db.Uuid
+  tenantId         String   @map("tenant_id") @db.Uuid
+  number           Int
+  purchaseOrderId  String?  @map("purchase_order_id") @db.Uuid
+  supplierId       String   @map("supplier_id") @db.Uuid
+  warehouseId      String   @map("warehouse_id") @db.Uuid
+  currency         Currency
+  baseCurrency     Currency @map("base_currency")
+  // Tasa CONGELADA del documento: nunca se recalcula.
+  exchangeRateId   String?  @map("exchange_rate_id") @db.Uuid
+  exchangeRate     Decimal? @map("exchange_rate") @db.Decimal(20, 8)
+  supplierInvoice  String?  @map("supplier_invoice")
+  additionalCosts  Decimal  @default(0) @map("additional_costs") @db.Decimal(20, 2)
+  merchandiseTotal Decimal  @default(0) @map("merchandise_total") @db.Decimal(20, 2)
+  totalBase        Decimal  @default(0) @map("total_base") @db.Decimal(20, 2)
+  notes            String?
+  operationId      String   @map("operation_id") @db.Uuid
+  createdById      String   @map("created_by_id") @db.Uuid
+  receivedAt       DateTime @default(now()) @map("received_at")
+
+  supplier      Supplier           @relation(fields: [tenantId, supplierId], references: [tenantId, id], onDelete: Restrict)
+  warehouse     Warehouse          @relation(fields: [tenantId, warehouseId], references: [tenantId, id], onDelete: Restrict)
+  purchaseOrder PurchaseOrder?     @relation(fields: [purchaseOrderId], references: [id], onDelete: Restrict)
+  rateRecord    ExchangeRate?      @relation(fields: [exchangeRateId], references: [id], onDelete: Restrict)
+  lines         GoodsReceiptLine[]
+
+  @@unique([tenantId, number])
+  @@unique([tenantId, id])
+  @@index([tenantId, receivedAt(sort: Desc)])
+  @@map("goods_receipts")
+}
+
+model GoodsReceiptLine {
+  id                  String   @id @default(uuid()) @db.Uuid
+  tenantId            String   @map("tenant_id") @db.Uuid
+  receiptId           String   @map("receipt_id") @db.Uuid
+  purchaseOrderLineId String?  @map("purchase_order_line_id") @db.Uuid
+  productId           String   @map("product_id") @db.Uuid
+  lotId               String?  @map("lot_id") @db.Uuid
+  quantity            Decimal  @db.Decimal(20, 6)
+  enteredQuantity     Decimal  @map("entered_quantity") @db.Decimal(20, 6)
+  enteredUnit         String   @map("entered_unit")
+  // Precio por unidad ingresada en la moneda del documento.
+  unitPrice           Decimal  @map("unit_price") @db.Decimal(20, 6)
+  // Precio pactado en la orden (para mostrar diferencias).
+  orderedUnitPrice    Decimal? @map("ordered_unit_price") @db.Decimal(20, 6)
+  // Costo puesto en almacén por unidad BASE, en moneda base (incluye gastos prorrateados).
+  landedUnitCost      Decimal  @map("landed_unit_cost") @db.Decimal(20, 6)
+  movementId          String   @map("movement_id") @db.Uuid
+
+  receipt           GoodsReceipt       @relation(fields: [tenantId, receiptId], references: [tenantId, id], onDelete: Restrict)
+  purchaseOrderLine PurchaseOrderLine? @relation(fields: [purchaseOrderLineId], references: [id], onDelete: Restrict)
+  product           Product            @relation(fields: [tenantId, productId], references: [tenantId, id], onDelete: Restrict)
+
+  @@index([tenantId, receiptId])
+  @@map("goods_receipt_lines")
+}
+
+model Notification {
+  id        String    @id @default(uuid()) @db.Uuid
+  tenantId  String    @map("tenant_id") @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  kind      String
+  title     String
+  body      String
+  link      String?
+  // Evita duplicados: el mismo aviso no se crea dos veces para el mismo usuario.
+  dedupeKey String    @map("dedupe_key")
+  readAt    DateTime? @map("read_at")
+  emailedAt DateTime? @map("emailed_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@unique([tenantId, userId, dedupeKey])
+  @@index([tenantId, userId, readAt])
+  @@map("notifications")
 }
 
 // ─────────────────────────────── Suscripción ─────────────────────────────────

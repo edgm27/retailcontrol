@@ -5,7 +5,7 @@
  *   en PostgreSQL (FOR UPDATE SKIP LOCKED) para alertas de vencimiento.
  */
 import { prisma } from "@rc/db";
-import { purgeExpiredEphemeralData } from "@rc/domain";
+import { purgeExpiredEphemeralData, runAllTenantAlerts } from "@rc/domain";
 import pino from "pino";
 
 const log = pino({ level: process.env.LOG_LEVEL ?? "info", base: { service: "retailcontrol-worker" } });
@@ -19,6 +19,13 @@ async function tick() {
     log.info({ job: "purge-ephemeral", purged, ms: Date.now() - started }, "job completado");
   } catch (err) {
     log.error({ job: "purge-ephemeral", err: { message: (err as Error).message } }, "job falló");
+  }
+  try {
+    const t0 = Date.now();
+    const r = await runAllTenantAlerts();
+    log.info({ job: "alerts", ...r, ms: Date.now() - t0 }, "job completado");
+  } catch (err) {
+    log.error({ job: "alerts", err: { message: (err as Error).message } }, "job falló");
   }
 }
 

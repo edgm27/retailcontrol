@@ -53,6 +53,60 @@ export const movementInputSchema = z.object({
 });
 export type MovementInput = z.input<typeof movementInputSchema>;
 
+/**
+ * Entrada valorizada al almacén (usada por movimientos y recepciones de compra):
+ * actualiza costo promedio, saldo e inserta el movimiento. Debe llamarse con el
+ * producto ya bloqueado (loadProduct(..., { lock: true })).
+ */
+export async function receiveIntoStock(
+  tx: Tx,
+  args: {
+    actor: TenantActor;
+    product: Awaited<ReturnType<typeof loadProduct>>;
+    warehouseId: string;
+    lotId: string | null;
+    baseQty: ReturnType<typeof D>;
+    enteredQty: ReturnType<typeof D>;
+    enteredUnit: string;
+    /** Costo por unidad BASE en moneda base; null = no valoriza (usa el promedio actual). */
+    unitCostBase: ReturnType<typeof D> | null;
+    baseCurrency: "USD" | "VES";
+    operationId: string;
+    type: "RECEIPT" | "RETURN_IN";
+    reason?: string | null;
+    referenceType?: string | null;
+    referenceId?: string | null;
+  },
+) {
+  const { actor, product } = args;
+  let unitCost = product.avgCost;
+  if (args.unitCostBase) {
+    const prevQty = await totalOnHand(tx, actor.tenantId, product.id);
+    const avg = weightedAverage(prevQty, product.avgCost, args.baseQty, args.unitCostBase);
+    await tx.product.update({ where: { id: product.id }, data: { avgCost: avg } });
+    product.avgCost = avg;
+    unitCost = args.unitCostBase.toDecimalPlaces(6);
+  }
+  await applyBalanceDelta(tx, { tenantId: actor.tenantId, warehouseId: args.warehouseId, productId: product.id, lotId: args.lotId, delta: args.baseQty, allowNegative: false });
+  return insertMovement(tx, {
+    tenantId: actor.tenantId,
+    operationId: args.operationId,
+    type: args.type,
+    warehouseId: args.warehouseId,
+    productId: product.id,
+    lotId: args.lotId,
+    quantity: args.baseQty,
+    enteredQuantity: args.enteredQty,
+    enteredUnit: args.enteredUnit,
+    unitCost,
+    currency: args.baseCurrency,
+    reason: args.reason ?? null,
+    referenceType: args.referenceType ?? null,
+    referenceId: args.referenceId ?? null,
+    actorUserId: actor.userId,
+  });
+}
+
 export interface MovementResult {
   operationId: string;
   movements: { id: string; lotId: string | null; quantity: string }[];
@@ -60,7 +114,7 @@ export interface MovementResult {
 }
 
 /** Resuelve (o crea, en entradas) el lote de una línea. */
-async function resolveInboundLot(
+export async function resolveInboundLot(
   tx: Tx,
   actor: TenantActor,
   product: Awaited<ReturnType<typeof loadProduct>>,
@@ -148,32 +202,23 @@ export async function postStockMovement(actor: TenantActor, raw: MovementInput, 
 
     if (inbound) {
       const lotId = await resolveInboundLot(tx, actor, product, input, today);
-      let unitCost = product.avgCost;
-      if (input.type === "RECEIPT" && cost) {
-        // El costo se expresa por unidad ingresada; se convierte a costo por unidad base.
-        const costPerBase = cost.times(qty).dividedBy(baseQty);
-        const prevQty = await totalOnHand(tx, actor.tenantId, product.id);
-        const avg = weightedAverage(prevQty, product.avgCost, baseQty, costPerBase);
-        await tx.product.update({ where: { id: product.id }, data: { avgCost: avg } });
-        unitCost = costPerBase.toDecimalPlaces(6);
-      }
-      await applyBalanceDelta(tx, { tenantId: actor.tenantId, warehouseId: wh.id, productId: product.id, lotId, delta: baseQty, allowNegative: false });
-      const m = await insertMovement(tx, {
-        tenantId: actor.tenantId,
-        operationId,
-        type: input.type,
+      // El costo se expresa por unidad ingresada; se convierte a costo por unidad base.
+      const costPerBase = input.type === "RECEIPT" && cost ? cost.times(qty).dividedBy(baseQty) : null;
+      const m = await receiveIntoStock(tx, {
+        actor,
+        product,
         warehouseId: wh.id,
-        productId: product.id,
         lotId,
-        quantity: baseQty,
-        enteredQuantity: qty,
+        baseQty,
+        enteredQty: qty,
         enteredUnit: input.unit.toUpperCase(),
-        unitCost,
-        currency: policy.baseCurrency,
+        unitCostBase: costPerBase,
+        baseCurrency: policy.baseCurrency,
+        operationId,
+        type: input.type === "RETURN_IN" ? "RETURN_IN" : "RECEIPT",
         reason: input.reason,
         referenceType: input.referenceType,
         referenceId: input.referenceId,
-        actorUserId: actor.userId,
       });
       out.push({ id: m.id, lotId, quantity: baseQty.toString() });
     } else {
@@ -255,6 +300,9 @@ export async function reverseOperation(actor: TenantActor, operationId: string, 
     const policy = await getInventoryPolicy(tx, actor.tenantId);
     const originals = await tx.stockMovement.findMany({ where: { tenantId: actor.tenantId, operationId }, orderBy: { createdAt: "asc" } });
     if (!originals.length) throw notFound("Operación no encontrada.");
+    if (originals.some((m) => m.referenceType === "GOODS_RECEIPT")) {
+      throw validation("Una recepción de compra no se revierte: registre una devolución a proveedor para corregirla.");
+    }
     if (originals.some((m) => !REVERSIBLE.has(m.type))) {
       throw validation("Esta operación no se revierte aquí (transferencias y conteos tienen su propio flujo).");
     }
