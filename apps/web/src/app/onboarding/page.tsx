@@ -2,13 +2,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, Field, Input
 import { ActionForm } from "@/components/action-form";
 import { requireVerifiedUser } from "@/server/session";
 import { createCompanyAction } from "./actions";
+import { AuthShell } from "@/components/shell/auth-shell";
 
 export const metadata = { title: "Registrar empresa" };
 
 export default async function OnboardingPage() {
   await requireVerifiedUser();
   return (
-    <main id="contenido" className="mx-auto max-w-lg px-4 py-10">
+    <AuthShell width="lg">
       <Card>
         <CardHeader>
           <CardTitle>Registre su empresa</CardTitle>
@@ -30,6 +31,6 @@ export default async function OnboardingPage() {
           </ActionForm>
         </CardContent>
       </Card>
-    </main>
+    </AuthShell>
   );
 }

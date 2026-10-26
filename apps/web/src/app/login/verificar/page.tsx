@@ -1,10 +1,11 @@
 import { Card, CardDescription, CardHeader, CardTitle } from "@rc/ui";
+import { AuthShell } from "@/components/shell/auth-shell";
 
 export const metadata = { title: "Revise su correo" };
 
 export default function VerifyRequestPage() {
   return (
-    <main id="contenido" className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-4">
+    <AuthShell width="md" center>
       <Card>
         <CardHeader>
           <CardTitle>Revise su correo</CardTitle>
@@ -14,6 +15,6 @@ export default function VerifyRequestPage() {
           </CardDescription>
         </CardHeader>
       </Card>
-    </main>
+    </AuthShell>
   );
 }

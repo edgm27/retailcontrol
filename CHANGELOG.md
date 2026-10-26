@@ -2,6 +2,22 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versionado semántico.
 
+## [0.6.0] — 2026-10-26 — Tablero de indicadores y nueva imagen
+
+### Añadido
+- Inicio convertido en tablero de indicadores: filtros de período (7/30/90 días) y almacén; tarjetas de
+  inventario valorizado, salidas y entradas a costo, compras recibidas (con variación vs. período anterior y
+  minigráfico), stock bajo, lotes por vencer, mermas, cobertura y rotación.
+- Gráficos: entradas vs. salidas por día, valor del inventario, vencimientos por rango (vencidos resaltados),
+  productos con mayor valor, valor por almacén y compras por proveedor; tooltip al pasar el cursor y botón
+  "Ver datos" con la tabla de cada gráfico; panel de pendientes.
+- Servicio `getDashboardAnalytics` (valores a costo, fechas en la zona horaria de la empresa) con prueba de integración.
+
+### Cambiado
+- Toda la aplicación usa la paleta del landing: menú lateral azul marino agrupado con íconos (cajón en móvil),
+  botones cian redondeados, tablas con encabezado azul marino, tarjetas redondeadas y fuente Plus Jakarta Sans.
+- Páginas de acceso, MFA, empresas, invitación y seguridad con fondo azul marino y logo.
+
 ## [0.5.0] — 2026-10-26 — Fase 3: compras y localización
 
 ### Añadido

@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 // por petición para que Next.js aplique ese nonce a sus scripts.
 export const dynamic = "force-dynamic";
 
-export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#0f766e" };
+export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#061423" };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (

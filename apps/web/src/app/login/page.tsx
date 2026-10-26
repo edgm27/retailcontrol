@@ -5,6 +5,7 @@ import { googleEnabled } from "@/auth";
 import { ActionForm } from "@/components/action-form";
 import { getSession } from "@/server/session";
 import { requestMagicLink, signInWithGoogle, signInWithPassword } from "./actions";
+import { AuthShell } from "@/components/shell/auth-shell";
 
 export const metadata: Metadata = { title: "Entrar" };
 
@@ -13,7 +14,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   if (await getSession()) redirect("/app");
   const next = sp.next ?? "/app";
   return (
-    <main id="contenido" className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-4 py-10">
+    <AuthShell width="md" center>
       <Card>
         <CardHeader>
           <CardTitle>{sp.registro ? "Cree su cuenta" : "Entrar a RetailControl"}</CardTitle>
@@ -55,6 +56,6 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           </p>
         </CardContent>
       </Card>
-    </main>
+    </AuthShell>
   );
 }

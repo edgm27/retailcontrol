@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { ActionForm } from "@/components/action-form";
 import { requireSession } from "@/server/session";
 import { verifyRecoveryAction, verifyTotpAction } from "../actions";
+import { AuthShell } from "@/components/shell/auth-shell";
 
 export const metadata = { title: "Verificación en dos pasos" };
 export const dynamic = "force-dynamic";
@@ -15,7 +16,7 @@ export default async function VerifyMfaPage() {
   if (s.mfaVerified) redirect("/app");
 
   return (
-    <main id="contenido" className="mx-auto max-w-md px-4 py-10">
+    <AuthShell width="md">
       <Card>
         <CardHeader>
           <CardTitle>Verificación en dos pasos</CardTitle>
@@ -43,6 +44,6 @@ export default async function VerifyMfaPage() {
           </details>
         </CardContent>
       </Card>
-    </main>
+    </AuthShell>
   );
 }

@@ -31,7 +31,7 @@ export function Alert({
 const badgeVariants = cva("inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium", {
   variants: {
     variant: {
-      default: "border-transparent bg-primary text-primary-foreground",
+      default: "border-transparent bg-navy text-white",
       secondary: "border-transparent bg-secondary text-secondary-foreground",
       outline: "text-foreground",
       success: "border-transparent bg-success/15 text-foreground",

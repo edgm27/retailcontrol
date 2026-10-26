@@ -5,3 +5,4 @@ export * from "./adjustments";
 export * from "./counts";
 export * from "./transfers";
 export * from "./queries";
+export * from "./analytics";

@@ -340,3 +340,30 @@ describe("Aislamiento del inventario entre empresas", () => {
     expect(await prisma.stockBalance.count()).toBe(0); // sin contexto: nada visible
   });
 });
+
+describe("Tablero analítico", () => {
+  it("calcula KPI, series diarias, top de productos, vencimientos por horizonte y compras por período", async () => {
+    const { getDashboardAnalytics } = await import("@rc/domain");
+    const ctx = await setup();
+    const p = (await createProduct(ctx.owner, { sku: "KPI-1", name: "Producto KPI", minStock: "100", requiresExpiry: true })).id;
+    const caracas = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Caracas" }).format(new Date());
+    const exp = (d: number) => new Date(Date.parse(`${caracas}T12:00:00Z`) + d * 86_400_000).toISOString().slice(0, 10);
+    await postStockMovement(ctx.owner, { idempotencyKey: key(), type: "RECEIPT", warehouseId: ctx.warehouseId, productId: p, quantity: "10", unit: "UND", unitCost: "2", lotNumber: "K1", expiresAt: exp(5) });
+    await postStockMovement(ctx.owner, { idempotencyKey: key(), type: "RECEIPT", warehouseId: ctx.warehouseId, productId: p, quantity: "10", unit: "UND", unitCost: "2", lotNumber: "K2", expiresAt: exp(45) });
+    await postStockMovement(ctx.owner, { idempotencyKey: key(), type: "ISSUE", warehouseId: ctx.warehouseId, productId: p, quantity: "4", unit: "UND" });
+    const a = await getDashboardAnalytics(ctx.owner, { days: 7 });
+    expect(a.kpis).toMatchObject({ inventoryValue: 32, activeProducts: 1, productsWithStock: 1, lowStock: 1, expiringLots: 1, expiringValue: 12 });
+    expect(a.kpis.inbound.value).toBe(40);
+    expect(a.kpis.outbound.value).toBe(8);
+    expect(a.kpis.coverageDays).toBe(28); // 32 / (8 / 7 días)
+    expect(a.daily).toHaveLength(7);
+    expect(a.daily.at(-1)).toMatchObject({ date: caracas, inbound: 40, outbound: 8, inventory: 32 });
+    expect(a.daily[0]!.inventory).toBe(0); // antes de los movimientos de hoy
+    expect(a.topProducts[0]).toMatchObject({ sku: "KPI-1", value: 32 });
+    expect(a.expiryBuckets.find((b) => b.key === "d7")).toMatchObject({ lots: 1, value: 12 });
+    expect(a.expiryBuckets.find((b) => b.key === "d60")).toMatchObject({ lots: 1, value: 20 });
+    // Otra empresa no ve nada.
+    const other = await setup();
+    expect((await getDashboardAnalytics(other.owner)).kpis.inventoryValue).toBe(0);
+  });
+});

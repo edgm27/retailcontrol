@@ -12,6 +12,11 @@
 | 5 — Producción | Reportes, exportaciones, observabilidad, rendimiento, seguridad, despliegue | ⏳ | Checklist de go-live |
 | Posterior | POS, facturación fiscal autorizada, contabilidad, bancos | — | Requiere ADR y asesoría legal |
 
+### Cambios posteriores (2026-10-26, v0.6.0)
+
+- Tablero de indicadores en Inicio (KPI, gráficos con tooltip y vista de tabla, filtros de período y almacén).
+- Paleta y estilo del landing en toda la aplicación (menú lateral azul marino, botones cian).
+
 ### Cambios posteriores (2026-10-25)
 
 - Acceso con correo + contraseña, administrador inicial por variables secretas, MFA de propietario/admin

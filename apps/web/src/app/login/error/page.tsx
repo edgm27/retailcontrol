@@ -1,5 +1,6 @@
 import { buttonVariants, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@rc/ui";
 import Link from "next/link";
+import { AuthShell } from "@/components/shell/auth-shell";
 
 export const metadata = { title: "No se pudo entrar" };
 
@@ -12,7 +13,7 @@ const MESSAGES: Record<string, string> = {
 export default async function AuthErrorPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   const { error } = await searchParams;
   return (
-    <main id="contenido" className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-4">
+    <AuthShell width="md" center>
       <Card>
         <CardHeader>
           <CardTitle>No se pudo entrar</CardTitle>
@@ -22,6 +23,6 @@ export default async function AuthErrorPage({ searchParams }: { searchParams: Pr
           <Link href="/login" className={buttonVariants()}>Volver a intentar</Link>
         </CardContent>
       </Card>
-    </main>
+    </AuthShell>
   );
 }

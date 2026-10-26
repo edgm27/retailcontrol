@@ -1,27 +1,41 @@
 @import "tailwindcss";
 @source "../../../../packages/ui/src";
 
-/* Paleta con contraste AA verificado para texto normal sobre fondo. */
+/* Paleta de la marca (igual que la landing). Contrastes AA verificados:
+   texto #04202a sobre cian 10,9:1 · acento #0b6f7f sobre blanco 5,8:1 · cian sobre navy 11,9:1. */
 @theme {
-  --color-background: #ffffff;
-  --color-foreground: #0f172a;
+  --font-sans: var(--font-landing), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --color-background: #f4f8fb;
+  --color-foreground: #0b1b2b;
   --color-card: #ffffff;
-  --color-card-foreground: #0f172a;
-  --color-muted: #f1f5f9;
+  --color-card-foreground: #0b1b2b;
+  --color-muted: #eef4f7;
   --color-muted-foreground: #475569;
-  --color-border: #e2e8f0;
-  --color-input: #cbd5e1;
-  --color-ring: #0f766e;
-  --color-primary: #0f766e;
+  --color-border: #dde7ee;
+  --color-input: #c3d1dc;
+  --color-ring: #0b6f7f;
+  --color-primary: #0b6f7f;
   --color-primary-foreground: #ffffff;
-  --color-secondary: #e2e8f0;
-  --color-secondary-foreground: #0f172a;
-  --color-accent: #f1f5f9;
-  --color-accent-foreground: #0f172a;
+  --color-brand: #2ee6e0;
+  --color-brand-strong: #19c6c9;
+  --color-brand-foreground: #04202a;
+  --color-navy: #061423;
+  --color-navy-2: #0b2033;
+  --color-navy-3: #12304a;
+  --color-secondary: #e3edf3;
+  --color-secondary-foreground: #0b1b2b;
+  --color-accent: #e6f7f8;
+  --color-accent-foreground: #0b1b2b;
   --color-destructive: #b91c1c;
   --color-destructive-foreground: #ffffff;
   --color-success: #15803d;
   --color-warning: #b45309;
+  /* Gráficas (validadas con el script de dataviz: CVD y contraste ≥ 3:1 sobre blanco) */
+  --color-series-1: #0b8fa3;
+  --color-series-2: #eb6834;
+  --color-series-3: #6250d6;
+  --color-critical: #e34948;
+  --color-grid: #e6edf2;
 }
 
 @layer base {
@@ -29,7 +43,7 @@
   body {
     background: var(--color-background);
     color: var(--color-foreground);
-    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-family: var(--font-sans);
   }
   :focus-visible { outline: 2px solid var(--color-ring); outline-offset: 2px; }
 }
@@ -46,3 +60,21 @@ html { scroll-behavior: smooth; }
 @keyframes rc-progress { from { width: 0; } to { width: 100%; } }
 .rc-progress { animation-name: rc-progress; animation-timing-function: linear; animation-fill-mode: both; }
 @media (prefers-reduced-motion: reduce) { .rc-fade, .rc-progress { animation: none; } }
+
+/* App: fondos de marca */
+.auth-bg {
+  background:
+    radial-gradient(1200px 600px at 85% -10%, rgba(46, 230, 224, .18), transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, rgba(31, 183, 214, .16), transparent 60%),
+    linear-gradient(160deg, #061423 0%, #0b2033 55%, #0a2a3d 100%);
+}
+.sidebar-bg {
+  background:
+    radial-gradient(500px 300px at 0% 0%, rgba(46, 230, 224, .10), transparent 70%),
+    linear-gradient(180deg, #061423 0%, #0b2033 100%);
+}
+.hero-band {
+  background:
+    radial-gradient(700px 260px at 100% 0%, rgba(46, 230, 224, .22), transparent 65%),
+    linear-gradient(120deg, #061423 0%, #0b2033 60%, #12304a 100%);
+}

@@ -12,6 +12,7 @@ import {
   setPasswordAction,
 } from "./actions";
 import { RegenerateCodesForm } from "./regenerate-form";
+import { AuthShell } from "@/components/shell/auth-shell";
 
 export const metadata = { title: "Seguridad de la cuenta" };
 export const dynamic = "force-dynamic";
@@ -31,7 +32,7 @@ export default async function SecurityPage({ searchParams }: { searchParams: Pro
   ]);
 
   return (
-    <main id="contenido" className="mx-auto grid max-w-3xl gap-6 px-4 py-8">
+    <AuthShell width="3xl" panel>
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Seguridad de la cuenta</h1>
         <Link href="/app" className={buttonVariants({ variant: "outline", size: "sm" })}>Volver</Link>
@@ -130,6 +131,6 @@ export default async function SecurityPage({ searchParams }: { searchParams: Pro
           </div>
         </CardContent>
       </Card>
-    </main>
+    </AuthShell>
   );
 }

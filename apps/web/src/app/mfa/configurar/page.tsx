@@ -5,6 +5,7 @@ import QRCode from "qrcode";
 import { requireSession, toUserActor } from "@/server/session";
 import { confirmEnrollmentAction } from "../actions";
 import { EnrollmentPanel } from "./enrollment-panel";
+import { AuthShell } from "@/components/shell/auth-shell";
 
 export const metadata = { title: "Configurar verificación en dos pasos" };
 export const dynamic = "force-dynamic";
@@ -23,7 +24,7 @@ export default async function ConfigureMfaPage({ searchParams }: { searchParams:
   }
 
   return (
-    <main id="contenido" className="mx-auto max-w-lg px-4 py-10">
+    <AuthShell width="lg">
       <Card>
         <CardHeader>
           <CardTitle>Verificación en dos pasos</CardTitle>
@@ -42,6 +43,6 @@ export default async function ConfigureMfaPage({ searchParams }: { searchParams:
           <EnrollmentPanel action={confirmEnrollmentAction} enrollment={enrollment} />
         </CardContent>
       </Card>
-    </main>
+    </AuthShell>
   );
 }

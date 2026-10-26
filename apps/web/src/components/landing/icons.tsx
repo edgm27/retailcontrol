@@ -55,10 +55,10 @@ export const IconLog = (p: SVGProps<SVGSVGElement>) => (
   <svg {...base} {...p}><path d="M6 3h9l4 4v14H6z" /><path d="M14 3v5h5M9 12h7M9 16h7" /></svg>
 );
 
-export function Logo({ className }: { className?: string }) {
+export function Logo({ className, compact = false }: { className?: string; compact?: boolean }) {
   return (
     <span className={`inline-flex items-center gap-2.5 ${className ?? ""}`}>
-      <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden>
+      <svg width={compact ? 28 : 34} height={compact ? 28 : 34} viewBox="0 0 34 34" aria-hidden>
         <defs>
           <linearGradient id="rc-g" x1="0" y1="1" x2="1" y2="0">
             <stop offset="0" stopColor="#1fb7d6" />
@@ -71,7 +71,7 @@ export function Logo({ className }: { className?: string }) {
         <rect x="2" y="11" width="7" height="6" rx="1.5" fill="#3ef0e4" opacity=".55" />
       </svg>
       <span className="flex flex-col leading-none">
-        <span className="text-[1.6rem] font-bold tracking-tight">
+        <span className={`${compact ? "text-[1.3rem]" : "text-[1.6rem]"} font-bold tracking-tight`}>
           <span className="text-white">Retail</span>
           <span className="text-[#2ee6e0]">Control</span>
         </span>

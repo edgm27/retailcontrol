@@ -3,6 +3,7 @@ import { Button, buttonVariants, Card, CardContent, CardHeader, CardTitle } from
 import Link from "next/link";
 import { requireVerifiedUser } from "@/server/session";
 import { switchTenantAction } from "../app/actions";
+import { AuthShell } from "@/components/shell/auth-shell";
 
 export const metadata = { title: "Sus empresas" };
 
@@ -10,7 +11,7 @@ export default async function TenantsPage() {
   const user = await requireVerifiedUser();
   const tenants = await listUserTenants(user.userId);
   return (
-    <main id="contenido" className="mx-auto max-w-lg px-4 py-10">
+    <AuthShell width="lg">
       <Card>
         <CardHeader>
           <CardTitle>Elija una empresa</CardTitle>
@@ -31,6 +32,6 @@ export default async function TenantsPage() {
           <Link href="/onboarding" className={buttonVariants({ variant: "outline" })}>Registrar otra empresa</Link>
         </CardContent>
       </Card>
-    </main>
+    </AuthShell>
   );
 }
