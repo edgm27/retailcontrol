@@ -14,16 +14,29 @@ import {
   Logo,
 } from "./icons";
 
-type Status = "disponible" | "proximamente";
-const FUNCIONES: { icon: typeof IconBox; title: string; text: string; status: Status }[] = [
-  { icon: IconStore, title: "Sucursales y almacenes", text: "Organice su negocio por sucursal y almacén, con códigos propios.", status: "disponible" },
-  { icon: IconUsers, title: "Usuarios y roles", text: "Propietario, administrador, gerente, almacenista, comprador, auditor y consulta.", status: "disponible" },
-  { icon: IconBox, title: "Catálogo de productos", text: "SKU único por empresa y búsqueda rápida, también con lector de código de barras.", status: "disponible" },
-  { icon: IconLog, title: "Bitácora de auditoría", text: "Cada cambio queda registrado con quién, qué y cuándo. No se puede borrar.", status: "disponible" },
-  { icon: IconCalendar, title: "Lotes y vencimientos", text: "Despacho FEFO, alertas a 7, 15, 30, 60 y 90 días y bloqueo de lotes vencidos.", status: "proximamente" },
-  { icon: IconTransfer, title: "Movimientos y transferencias", text: "Entradas, salidas, ajustes con aprobación y Kardex por producto.", status: "proximamente" },
-  { icon: IconScan, title: "Compras y recepciones", text: "Órdenes de compra, recepción parcial por lote y proveedores con RIF.", status: "proximamente" },
-  { icon: IconChart, title: "Reportes y valorización", text: "Existencias, rotación, mermas y valor del inventario en USD y Bs.", status: "proximamente" },
+type Modulo = { icon: typeof IconBox; title: string; text: string };
+
+/** Módulos que ya se pueden usar (verificados con pruebas automáticas). */
+const DISPONIBLES: Modulo[] = [
+  { icon: IconChart, title: "Tablero de indicadores", text: "Inventario valorizado, entradas y salidas, mermas, cobertura y vencimientos en gráficos, por período y almacén." },
+  { icon: IconBox, title: "Catálogo de productos", text: "SKU único, unidades y presentaciones (caja, bulto, kilo), códigos de barra y lector USB." },
+  { icon: IconTransfer, title: "Movimientos y Kardex", text: "Entradas y salidas sin existencias negativas, reversos auditados y Kardex con costo promedio." },
+  { icon: IconCalendar, title: "Lotes y vencimientos", text: "Despacho FEFO automático, bloqueo de lotes vencidos y lotes por vencer a 7, 15, 30, 60 y 90 días." },
+  { icon: IconCheckCircle, title: "Ajustes, mermas y conteos", text: "Ajustes con motivo y aprobación por monto, conteos físicos con diferencias aprobadas." },
+  { icon: IconStore, title: "Sucursales, almacenes y transferencias", text: "Existencias por almacén y transferencias entre sucursales con salida y entrada conciliadas." },
+  { icon: IconScan, title: "Compras y recepciones", text: "Órdenes de compra con aprobación, recepción parcial por lote, gastos prorrateados y reposición sugerida." },
+  { icon: IconUsers, title: "Proveedores y tasas Bs./USD", text: "Proveedores con RIF, tasa del día con fuente; la tasa queda congelada en cada documento." },
+  { icon: IconShield, title: "Alertas", text: "Avisos de stock bajo y de vencimientos según los días que usted configure." },
+  { icon: IconUsers, title: "Usuarios, roles y 2FA", text: "Siete roles, clave temporal con cambio obligatorio y verificación en dos pasos con Google Authenticator." },
+  { icon: IconLog, title: "Bitácora de auditoría", text: "Cada cambio queda registrado con quién, qué y cuándo. No se puede modificar ni borrar." },
+  { icon: IconStore, title: "Suscripción y planes", text: "Prueba gratis de 14 días, elección de plan y registro de pagos por transferencia o pago móvil." },
+];
+
+/** En desarrollo: se muestran como pendientes, sin fecha comprometida. */
+const PENDIENTES: Modulo[] = [
+  { icon: IconChart, title: "Reporte ABC", text: "Clasificación de productos A, B y C según su participación en el valor de las salidas, para enfocar compras y conteos." },
+  { icon: IconLog, title: "Exportación a Excel y PDF", text: "Descarga de existencias, Kardex, lotes y reportes." },
+  { icon: IconBox, title: "Importación de productos", text: "Carga masiva del catálogo desde una hoja de cálculo (CSV)." },
 ];
 
 function SectionTitle({ eyebrow, title, text }: { eyebrow: string; title: string; text?: string }) {
@@ -36,28 +49,50 @@ function SectionTitle({ eyebrow, title, text }: { eyebrow: string; title: string
   );
 }
 
+function ModuloCard({ m, pendiente = false }: { m: Modulo; pendiente?: boolean }) {
+  return (
+    <li className={`flex flex-col rounded-2xl p-6 ${pendiente ? "border border-dashed border-amber-300 bg-amber-50/40" : "border border-slate-200 bg-white shadow-sm"}`}>
+      <div className="flex items-start justify-between gap-3">
+        <span className={`grid h-12 w-12 place-items-center rounded-xl ${pendiente ? "bg-amber-100 text-amber-800" : "bg-[#e6fbfb] text-[#0e9aa7]"}`}>
+          <m.icon className="h-6 w-6" />
+        </span>
+        <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${pendiente ? "bg-amber-100 text-amber-900" : "bg-emerald-50 text-emerald-700"}`}>
+          {pendiente ? "Pendiente" : "Disponible"}
+        </span>
+      </div>
+      <h3 className="mt-4 text-lg font-bold text-[#061423]">{m.title}</h3>
+      <p className="mt-2 text-slate-600">{m.text}</p>
+    </li>
+  );
+}
+
 export function Funcionalidades() {
   return (
     <section id="funcionalidades" className="scroll-mt-6 bg-white px-4 py-20 sm:px-6 lg:px-8">
       <SectionTitle
         eyebrow="Funcionalidades"
         title="Todo su inventario en un solo lugar"
-        text="Construimos RetailControl por etapas. Le mostramos con claridad qué ya puede usar y qué viene en camino."
+        text="Construimos RetailControl por etapas y le mostramos con claridad qué ya puede usar y qué está en desarrollo."
       />
-      <ul className="mx-auto mt-12 grid max-w-7xl gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        {FUNCIONES.map((f) => (
-          <li key={f.title} className="rounded-2xl border border-slate-200 p-6 shadow-sm">
-            <div className="flex items-start justify-between gap-3">
-              <span className="grid h-12 w-12 place-items-center rounded-xl bg-[#e6fbfb] text-[#0e9aa7]"><f.icon className="h-6 w-6" /></span>
-              <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${f.status === "disponible" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-800"}`}>
-                {f.status === "disponible" ? "Disponible" : "Próximamente"}
-              </span>
-            </div>
-            <h3 className="mt-4 text-lg font-bold text-[#061423]">{f.title}</h3>
-            <p className="mt-2 text-slate-600">{f.text}</p>
-          </li>
-        ))}
-      </ul>
+      <div className="mx-auto mt-12 max-w-7xl">
+        <h3 className="flex items-center gap-3 text-xl font-bold text-[#061423]">
+          Disponible hoy
+          <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-sm font-semibold text-emerald-700">{DISPONIBLES.length} módulos</span>
+        </h3>
+        <ul className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-4" data-testid="modulos-disponibles">
+          {DISPONIBLES.map((m) => <ModuloCard key={m.title} m={m} />)}
+        </ul>
+        <h3 className="mt-14 flex items-center gap-3 text-xl font-bold text-[#061423]">
+          Pendiente
+          <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-sm font-semibold text-amber-900">en desarrollo</span>
+        </h3>
+        <ul className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3" data-testid="modulos-pendientes">
+          {PENDIENTES.map((m) => <ModuloCard key={m.title} m={m} pendiente />)}
+        </ul>
+        <p className="mt-6 text-sm text-slate-500">
+          Las funciones pendientes no tienen fecha comprometida. No incluye facturación fiscal ni punto de venta.
+        </p>
+      </div>
     </section>
   );
 }
@@ -84,12 +119,27 @@ export function Sectores() {
 }
 
 export interface PlanView {
+  features?: string[];
   code: string;
   name: string;
   description: string | null;
   price: string;
   maxBranches: number | null;
   maxUsers: number | null;
+}
+
+const FEATURE_LABELS: Record<string, string> = {
+  catalogo: "Catálogo, movimientos, lotes y vencimientos",
+  compras: "Compras, recepciones y proveedores",
+  transferencias: "Transferencias entre almacenes",
+  alertas: "Alertas de stock y vencimiento",
+  reportes_avanzados: "Reportes avanzados (Reporte ABC pendiente)",
+  auditoria_ampliada: "Auditoría ampliada",
+  soporte_prioritario: "Soporte prioritario",
+};
+
+function planHighlights(features: string[]): string[] {
+  return Object.keys(FEATURE_LABELS).filter((k) => features.includes(k)).map((k) => FEATURE_LABELS[k]!);
 }
 
 export function Precios({ plans }: { plans: PlanView[] }) {
@@ -111,9 +161,12 @@ export function Precios({ plans }: { plans: PlanView[] }) {
                 <li className="flex gap-2"><IconCheckCircle className="h-5 w-5 shrink-0 text-[#2ee6e0]" />{p.maxBranches ? `Hasta ${p.maxBranches} sucursal(es)` : "Sucursales según contrato"}</li>
                 <li className="flex gap-2"><IconCheckCircle className="h-5 w-5 shrink-0 text-[#2ee6e0]" />{p.maxUsers ? `Hasta ${p.maxUsers} usuarios` : "Usuarios según contrato"}</li>
                 <li className="flex gap-2"><IconCheckCircle className="h-5 w-5 shrink-0 text-[#2ee6e0]" />Verificación en dos pasos</li>
+                {planHighlights(p.features ?? []).map((t) => (
+                  <li key={t} className="flex gap-2"><IconCheckCircle className="h-5 w-5 shrink-0 text-[#2ee6e0]" />{t}</li>
+                ))}
               </ul>
               <Link
-                href="/login?registro=1"
+                href={custom ? "/login?registro=1" : `/login?registro=1&next=${encodeURIComponent(`/onboarding?plan=${p.code}`)}`}
                 className={`mt-8 inline-flex h-12 items-center justify-center gap-2 rounded-full font-bold ${featured ? "bg-[#2ee6e0] text-[#04202a]" : "border border-[#061423] text-[#061423] hover:bg-slate-50"}`}
               >
                 {custom ? "Contactar" : "Comenzar gratis"} <IconArrowRight className="h-5 w-5" />
@@ -136,7 +189,7 @@ export function Seguridad() {
     "Los datos de cada empresa están aislados en la base de datos.",
     "Bitácora de auditoría que no se puede modificar ni borrar.",
     "Sesiones que usted puede cerrar a distancia en cualquier momento.",
-    "Respaldos cifrados con prueba de restauración.",
+    "Procedimiento de respaldo y restauración probado automáticamente.",
   ];
   return (
     <section id="seguridad" className="scroll-mt-6 bg-[#061423] px-4 py-20 text-white sm:px-6 lg:px-8">
@@ -167,7 +220,8 @@ export function Preguntas() {
     ["¿Necesito tarjeta de crédito para probar?", "No. La prueba gratuita de 14 días no requiere tarjeta."],
     ["¿RetailControl emite facturas fiscales?", "No. RetailControl controla su inventario; no sustituye su sistema de facturación o máquina fiscal homologada."],
     ["¿Puedo trabajar en dólares y bolívares?", "Sí. Puede registrar precios de referencia en USD o Bs. La tasa usada en cada documento se guarda y no cambia después."],
-    ["¿Qué pasa con mis datos si dejo de pagar?", "No se borran. Su cuenta pasa a modo de solo lectura y puede exportar su información."],
+    ["¿Qué pasa con mis datos si dejo de pagar?", "No se borran. Su cuenta pasa a modo de solo lectura y puede seguir consultándolos. La exportación a Excel/PDF está en desarrollo."],
+    ["¿Cómo pago la suscripción?", "Desde la aplicación registra su pago por transferencia o pago móvil con la referencia; lo verificamos y su plan queda activo."],
     ["¿Funciona desde el teléfono?", "Sí. Está diseñado para usarse desde el celular, la tablet o la computadora."],
   ];
   return (

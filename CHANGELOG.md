@@ -2,6 +2,26 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versionado semántico.
 
+## [0.8.0] — 2026-10-26 — Fase 4: comercialización
+
+### Añadido
+- Landing: módulos **disponibles** (12) y **pendientes** (Reporte ABC, exportación Excel/PDF, importación CSV),
+  funciones por plan y enlace al registro con el plan elegido.
+- Registro de empresa con elección de plan (prueba gratis de 14 días).
+- Suscripción (`/app/configuracion/suscripcion`): plan y estado, uso del plan, instrucciones de pago, registro de
+  pagos por transferencia o pago móvil (USD o Bs.) con monto esperado e historial; aviso de días de prueba y de gracia.
+- Panel de plataforma (`/plataforma`): resumen (MRR, conversión, pagos por conciliar), empresas (plan, uso,
+  extender prueba, suspender/reactivar/cancelar con motivo), conciliación de pagos, planes e instrucciones de pago.
+- Rol de superadministrador por `PLATFORM_SUPERADMIN_EMAILS`; 2FA obligatoria en el panel.
+- Período pagado con 7 días de gracia antes de pasar a solo lectura.
+
+### Seguridad
+- Pagos con RLS, inmutables una vez revisados y con segregación de funciones (nadie concilia su propio pago).
+- Pruebas de integración (`billing`) y E2E (`comercializacion`).
+
+### Corregido
+- El landing ya no promete exportación de datos (está en desarrollo).
+
 ## [0.7.0] — 2026-10-26 — Usuarios con clave temporal y 2FA administrada
 
 ### Añadido

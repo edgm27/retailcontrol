@@ -14,7 +14,7 @@ import {
   type UserActor,
 } from "@rc/domain";
 import { cookies, headers } from "next/headers";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { cache } from "react";
 
 const SESSION_COOKIES = ["__Secure-authjs.session-token", "authjs.session-token"] as const;
@@ -131,4 +131,16 @@ export async function requireTenant(permission?: Permission): Promise<TenantCont
     meta: await getRequestMeta(),
   };
   return { user, access, actor };
+}
+
+/**
+ * Acceso al panel de plataforma: sesión con segundo factor (requireVerifiedUser obliga a
+ * configurarlo a los roles de plataforma) y rol de plataforma. Los servicios vuelven a
+ * verificar el rol en la base de datos en cada operación.
+ */
+export async function requirePlatform(): Promise<{ user: VerifiedUser; actor: { userId: string; email: string; meta: RequestMeta } }> {
+  const user = await requireVerifiedUser();
+  if (user.platformRole === "NONE") notFound();
+  if (!user.mfaEnrolled || !user.mfaVerified) redirect("/mfa/configurar?motivo=plataforma");
+  return { user, actor: { userId: user.userId, email: user.email, meta: await getRequestMeta() } };
 }

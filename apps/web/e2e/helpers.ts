@@ -74,3 +74,11 @@ export async function setPlanForUser(email: string, planCode: string) {
     await tx.subscription.update({ where: { tenantId: m.tenantId }, data: { planId: plan.id } });
   });
 }
+
+/** Otorga el rol de superadministrador (equivale a PLATFORM_SUPERADMIN_EMAILS al desplegar). */
+export async function grantSuperadmin(email: string) {
+  const { config } = await import("dotenv");
+  config({ path: path.resolve(process.cwd(), "../../.env"), quiet: true });
+  const { ensurePlatformSuperadmins } = await import("@rc/domain");
+  await ensurePlatformSuperadmins([email]);
+}

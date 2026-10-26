@@ -174,6 +174,7 @@ model Plan {
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   subscriptions Subscription[]
+  payments      Payment[]
 
   @@map("plans")
 }
@@ -202,6 +203,7 @@ model Tenant {
   warehouses   Warehouse[]
   products     Product[]
   subscription Subscription?
+  payments     Payment[]
   invitations  Invitation[]
   auditEvents  AuditEvent[]
 
@@ -910,6 +912,64 @@ model Subscription {
   plan   Plan   @relation(fields: [planId], references: [id], onDelete: Restrict)
 
   @@map("subscriptions")
+}
+
+// ─────────────────────────────── Cobro manual (Fase 4) ───────────────────────
+
+enum PaymentMethod {
+  TRANSFER
+  PAGO_MOVIL
+  OTHER
+}
+
+enum PaymentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// Pago reportado por la empresa y conciliado por la plataforma contra el extracto.
+// La empresa solo inserta (PENDING); solo la plataforma aprueba o rechaza (RLS + trigger).
+model Payment {
+  id            String        @id @default(uuid()) @db.Uuid
+  tenantId      String        @map("tenant_id") @db.Uuid
+  planId        String        @map("plan_id") @db.Uuid
+  method        PaymentMethod
+  reference     String
+  amount        Decimal       @db.Decimal(18, 2)
+  currency      Currency
+  // Bs. por USD usada para convertir (solo pagos en VES; null si no había tasa).
+  exchangeRate  Decimal?      @map("exchange_rate") @db.Decimal(20, 8)
+  amountUsd     Decimal?      @map("amount_usd") @db.Decimal(18, 2)
+  paidOn        DateTime      @map("paid_on") @db.Date
+  periodMonths  Int           @map("period_months")
+  payerName     String?       @map("payer_name")
+  notes         String?
+  status        PaymentStatus @default(PENDING)
+  submittedById String        @map("submitted_by_id") @db.Uuid
+  reviewedById  String?       @map("reviewed_by_id") @db.Uuid
+  reviewedAt    DateTime?     @map("reviewed_at")
+  reviewNote    String?       @map("review_note")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  plan   Plan   @relation(fields: [planId], references: [id], onDelete: Restrict)
+
+  @@unique([tenantId, method, reference])
+  @@index([status, createdAt])
+  @@index([tenantId, createdAt])
+  @@map("payments")
+}
+
+// Ajustes globales de la plataforma (p. ej. instrucciones de pago). Lectura pública; escritura solo plataforma.
+model PlatformSetting {
+  key         String   @id
+  value       String
+  updatedById String?  @map("updated_by_id") @db.Uuid
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("platform_settings")
 }
 
 // ─────────────────────────────── Auditoría ───────────────────────────────────

@@ -104,3 +104,13 @@ tomar el control de una cuenta ajena:
   lectura/borrado de `mfa_totp`/`recovery_codes` de miembros (contexto de plataforma). Todo queda en auditoría
   (`member.user_created`, `member.updated`, `member.password_reset`, `member.mfa_reset`, `member.removed`).
 - La exigencia de 2FA por usuario vive en `memberships.mfa_required` (RLS de la empresa).
+
+## Pagos y panel de plataforma (v0.8.0)
+
+| Tabla | SELECT | INSERT | UPDATE / DELETE |
+|---|---|---|---|
+| `payments` | empresa propia o plataforma | empresa propia, solo `PENDING` sin revisor | solo plataforma y solo mientras está `PENDING`; DELETE prohibido (trigger) |
+| `platform_settings` | todos | plataforma | plataforma |
+
+El panel cuenta usuarios, sucursales y productos de cada empresa fijando el contexto de **esa** empresa en la
+transacción (RLS), y no lee inventarios, movimientos ni precios.

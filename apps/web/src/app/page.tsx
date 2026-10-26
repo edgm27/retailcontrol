@@ -20,8 +20,8 @@ export const metadata: Metadata = {
 };
 
 const FALLBACK_PLANS: PlanView[] = [
-  { code: "BASICO", name: "Básico", description: "Para un comercio con una sola tienda.", price: "15,00", maxBranches: 1, maxUsers: 2 },
-  { code: "PROFESIONAL", name: "Profesional", description: "Para comercios con varias sucursales y compras.", price: "39,00", maxBranches: 3, maxUsers: 10 },
+  { code: "BASICO", name: "Básico", description: "Para un comercio con una sola tienda.", price: "15,00", maxBranches: 1, maxUsers: 2, features: ["catalogo"] },
+  { code: "PROFESIONAL", name: "Profesional", description: "Para comercios con varias sucursales y compras.", price: "39,00", maxBranches: 3, maxUsers: 10, features: ["catalogo", "compras", "transferencias", "alertas", "reportes_avanzados"] },
   { code: "EMPRESARIAL", name: "Empresarial", description: "Límites por contrato y soporte prioritario.", price: "0", maxBranches: null, maxUsers: null },
 ];
 
@@ -37,6 +37,7 @@ async function loadPlans(): Promise<PlanView[]> {
       price: Number(p.priceMonthly).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
       maxBranches: p.maxBranches,
       maxUsers: p.maxUsers,
+      features: Array.isArray(p.features) ? (p.features as string[]) : [],
     }));
   } catch {
     return FALLBACK_PLANS;

@@ -36,6 +36,18 @@ Los secretos `RC_APP_PASSWORD`, `AUTH_SECRET`, `MFA_ENCRYPTION_KEY` y `RECOVERY_
 - Tras el primer acceso, cambie la contraseña inicial desde **Seguridad** y considere borrar
   `ADMIN_INITIAL_PASSWORD` del panel.
 
+## Panel de plataforma (superadministrador)
+
+1. En Render → servicio web → **Environment**, agregue `PLATFORM_SUPERADMIN_EMAILS` con el correo (o correos
+   separados por coma) de quienes administrarán la plataforma. El usuario debe existir (p. ej. el de `ADMIN_EMAIL`).
+2. Guarde y redespliegue. Al arrancar se asigna el rol (queda en auditoría).
+3. Entre a `/plataforma` (también aparece en el menú lateral). La primera vez se le pedirá **activar la
+   verificación en dos pasos**: es obligatoria para las cuentas de plataforma.
+4. En **Ajustes** escriba las instrucciones de pago (banco, titular, pago móvil) que verán las empresas.
+
+Por segregación de funciones, nadie puede conciliar un pago que registró. Para probar el flujo completo use
+otra empresa con otro usuario (o un segundo superadministrador).
+
 ## Pasos
 
 1. En Render: **New → Blueprint** → conecte su cuenta de GitHub → elija el repositorio.

@@ -27,3 +27,5 @@ export * from "./services/inventory";
 export * from "./money";
 export * from "./services/purchasing";
 export * from "./services/alerts";
+export * from "./services/billing";
+export * from "./services/platform";

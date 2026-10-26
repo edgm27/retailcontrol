@@ -6,6 +6,8 @@ const plusDays = (d: number) => new Date(Date.parse(`${caracasToday()}T12:00:00Z
 
 test("compras en bolívares: proveedor → tasa → orden → aprobar → recibir por lote → tasa congelada → alerta", async ({ page }) => {
   const { email } = await signUpOwner(page, "Abastos Compras E2E");
+  // Se fija el plan Básico para comprobar que las compras dependen del plan.
+  await setPlanForUser(email, "BASICO");
   const main = page.getByRole("main");
 
   await page.goto("/app/proveedores");

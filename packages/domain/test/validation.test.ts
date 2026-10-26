@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { redact } from "../src/services/audit";
-import { subscriptionAccessMode } from "../src/services/subscription-access";
+import { subscriptionAccessMode, subscriptionPhase } from "../src/services/subscription-access";
 import { isValidRifFormat, normalizeRif } from "../src/validation/rif";
 import { createProductSchema, createTenantSchema } from "../src/validation/schemas";
 
@@ -39,11 +39,22 @@ describe("Modo de acceso por estado de suscripción", () => {
     [{ status: "PAST_DUE", trialEndsAt: null, graceEndsAt: past }, "read_only"],
     [{ status: "SUSPENDED", trialEndsAt: null, graceEndsAt: null }, "read_only"],
     [{ status: "CANCELED", trialEndsAt: null, graceEndsAt: null }, "read_only"],
+    // Período pagado vencido: 7 días de gracia y luego solo lectura.
+    [{ status: "ACTIVE", trialEndsAt: null, graceEndsAt: null, currentPeriodEnd: future }, "full"],
+    [{ status: "ACTIVE", trialEndsAt: null, graceEndsAt: null, currentPeriodEnd: new Date("2026-05-28T00:00:00Z") }, "full"],
+    [{ status: "ACTIVE", trialEndsAt: null, graceEndsAt: null, currentPeriodEnd: past }, "read_only"],
   ] as const)("%o => %s", (sub, expected) => {
     expect(subscriptionAccessMode(sub, now)).toBe(expected);
   });
   it("sin suscripción => solo lectura", () => {
     expect(subscriptionAccessMode(null, now)).toBe("read_only");
+  });
+  it("fase y días restantes para los avisos", () => {
+    expect(subscriptionPhase({ status: "TRIALING", trialEndsAt: new Date("2026-06-04T00:00:00Z"), graceEndsAt: null }, now)).toEqual({ phase: "trial", daysLeft: 3 });
+    expect(subscriptionPhase({ status: "TRIALING", trialEndsAt: past, graceEndsAt: null }, now).phase).toBe("trial_expired");
+    expect(subscriptionPhase({ status: "ACTIVE", trialEndsAt: null, graceEndsAt: null, currentPeriodEnd: new Date("2026-05-28T00:00:00Z") }, now))
+      .toEqual({ phase: "grace", daysLeft: 3 });
+    expect(subscriptionPhase({ status: "ACTIVE", trialEndsAt: null, graceEndsAt: null, currentPeriodEnd: past }, now).phase).toBe("expired");
   });
 });
 

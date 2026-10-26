@@ -4,13 +4,24 @@
  * Idempotente: si el usuario ya existe, no cambia nada.
  */
 import { prisma } from "@rc/db";
-import { ensureBootstrapAdmin } from "@rc/domain";
+import { ensureBootstrapAdmin, ensurePlatformSuperadmins } from "@rc/domain";
 
 const email = process.env.ADMIN_EMAIL?.trim();
 const password = process.env.ADMIN_INITIAL_PASSWORD?.trim();
 const reset = process.env.ADMIN_RESET_PASSWORD?.trim().toLowerCase() === "true";
 
 async function main() {
+  await adminUser();
+  // Correos (separados por coma) con rol de superadministrador de la plataforma.
+  // Deben existir como usuarios; al entrar a /plataforma se les exige la verificación en dos pasos.
+  const superadmins = (process.env.PLATFORM_SUPERADMIN_EMAILS ?? "").split(",").map((e) => e.trim()).filter(Boolean);
+  if (superadmins.length) {
+    const applied = await ensurePlatformSuperadmins(superadmins);
+    console.log(`Superadministradores de plataforma: ${applied.length} asignado(s) nuevo(s) de ${superadmins.length} configurado(s).`);
+  }
+}
+
+async function adminUser() {
   if (!email || !password) {
     console.log("Administrador inicial: no configurado (ADMIN_EMAIL / ADMIN_INITIAL_PASSWORD).");
     return;

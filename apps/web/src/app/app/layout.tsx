@@ -1,4 +1,4 @@
-import { countUnreadNotifications, hasPermission, maybeRunTenantAlerts, ROLE_LABELS, type Permission } from "@rc/domain";
+import { countUnreadNotifications, getSubscriptionBanner, hasPermission, maybeRunTenantAlerts, ROLE_LABELS, type Permission } from "@rc/domain";
 import { Alert } from "@rc/ui";
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -45,6 +45,7 @@ const NAV: { label: string; items: Item[] }[] = [
       { href: "/app/configuracion/sucursales", label: "Sucursales", icon: "branch", permission: "branches.read" },
       { href: "/app/configuracion/usuarios", label: "Usuarios", icon: "users", permission: "members.read" },
       { href: "/app/configuracion/empresa", label: "Empresa", icon: "building", permission: "tenant.settings.manage" },
+      { href: "/app/configuracion/suscripcion", label: "Suscripción", icon: "card", permission: "billing.read" },
       { href: "/app/auditoria", label: "Auditoría", icon: "log", permission: "audit.read" },
     ],
   },
@@ -61,12 +62,18 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   const canInventory = hasPermission(access.role, "inventory.read");
   const unread = canInventory ? await countUnreadNotifications(actor) : 0;
 
+  const canBilling = hasPermission(access.role, "billing.read");
+  const banner = canBilling ? await getSubscriptionBanner(actor) : null;
+
   const groups: NavGroup[] = NAV.map((g) => ({
     label: g.label,
     items: g.items
       .filter((i) => !i.permission || hasPermission(access.role, i.permission))
       .map((i) => ({ href: i.href, label: i.label, icon: i.icon, badge: i.alerts ? unread : undefined })),
   })).filter((g) => g.items.length > 0);
+  if (user.platformRole !== "NONE") {
+    groups.push({ label: "Plataforma", items: [{ href: "/plataforma", label: "Panel de plataforma", icon: "shield" }] });
+  }
 
   const tenantCard = (
     <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3">
@@ -143,13 +150,23 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
             </nav>
           </div>
         </header>
-        {access.accessMode === "read_only" && (
+        {access.accessMode === "read_only" ? (
           <div className="px-4 pt-4 lg:px-8">
             <Alert variant="warning">
               La suscripción no está activa: la empresa está en modo solo lectura. Sus datos se conservan.
+              {canBilling && <> <Link href="/app/configuracion/suscripcion" className="font-semibold underline">Registrar un pago</Link> para reactivarla.</>}
             </Alert>
           </div>
-        )}
+        ) : banner && (banner.phase === "grace" || (banner.phase === "trial" && banner.daysLeft !== null && banner.daysLeft <= 7)) ? (
+          <div className="px-4 pt-4 lg:px-8">
+            <Alert variant={banner.phase === "grace" ? "warning" : "info"} data-testid="subscription-banner">
+              {banner.phase === "trial"
+                ? `Prueba gratis del plan ${banner.planName}: ${banner.daysLeft === 0 ? "vence hoy" : `quedan ${banner.daysLeft} día(s)`}.`
+                : `El período pagado venció: quedan ${banner.daysLeft} día(s) de gracia.`}{" "}
+              <Link href="/app/configuracion/suscripcion" className="font-semibold underline">Ver planes y pagar</Link>
+            </Alert>
+          </div>
+        ) : null}
         <main id="contenido" className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 lg:px-8" data-user={user.email}>
           {children}
         </main>

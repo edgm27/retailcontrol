@@ -1,7 +1,7 @@
 # Estrategia de facturación del SaaS
 
-> Estado: Fase 1 implementa planes, suscripción de prueba y **límites aplicados en backend**. Cobro y
-> conciliación: Fase 4. Ningún proveedor de pago está integrado ni contratado.
+> Estado (v0.8.0): planes, prueba, límites en backend y **cobro manual con conciliación** implementados
+> (§4.1). Ningún proveedor de pago (pasarela) está integrado ni contratado; no se procesan pagos en línea.
 
 ## 1. Planes (precios de EJEMPLO, editables por la plataforma)
 
@@ -85,3 +85,17 @@ Sujetos a validación técnica, legal y de seguridad antes de integrarse; mismo 
 
 MRR (suma de suscripciones ACTIVE normalizadas a mensual), churn mensual, conversiones de prueba, empresas en
 gracia, uso por empresa (usuarios, sucursales, productos). El panel muestra **metadatos**, nunca inventarios.
+
+
+## 6. Implementación del cobro manual (v0.8.0)
+
+- Tabla `payments` (RLS): la empresa solo **inserta** pagos `PENDING` y ve los suyos; solo la plataforma
+  (`app.platform_admin`) los aprueba o rechaza. Un trigger impide modificar un pago ya revisado o borrar pagos.
+  Restricción `reviewed_by_id <> submitted_by_id` (nadie concilia lo que registró). Referencia única por empresa y medio.
+- Registrar un pago está permitido en modo solo lectura (para reactivar la cuenta). Pagos en Bs. se convierten
+  con la tasa que la empresa registró para la fecha del pago; si no hay tasa, el operador lo ve.
+- Aprobar: plan = el pagado; `ACTIVE`; `current_period_end` = fin vigente (o hoy si venció) + meses.
+  Tras el fin del período hay **7 días de gracia** y luego solo lectura (`subscriptionAccessMode`).
+- Panel `/plataforma`: SUPERADMIN gestiona; SUPPORT solo consulta. Rol asignado por `PLATFORM_SUPERADMIN_EMAILS`
+  al desplegar; MFA obligatorio. El rol se verifica en la base de datos en cada operación.
+- Evidencia: `tests/integration/billing.test.ts`, `apps/web/e2e/comercializacion.spec.ts`.

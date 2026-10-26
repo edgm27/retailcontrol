@@ -8,9 +8,23 @@
 | 1 — Fundaciones | Proyecto ejecutable, PostgreSQL + RLS, empresas, usuarios, Google OIDC, MFA TOTP, RBAC, auditoría, CI | ✅ (ver pendientes) | Pruebas de aislamiento y auth en verde ✅ |
 | 2 — Inventario | Unidades, Kardex, movimientos, saldos, lotes, FEFO, vencimientos, conteos | ✅ (v0.4.0) | Concurrencia e invariantes en verde ✅ |
 | 3 — Compras y localización | Proveedores, OC, recepción, VES/USD, tasas auditadas, alertas | ✅ (v0.5.0) | E2E de compras y precisión monetaria ✅ |
-| 4 — Comercialización | Landing completa, onboarding con plan, cobro/conciliación, superadmin | ⏳ (límites ✅) | Onboarding y límites E2E |
+| 4 — Comercialización | Landing completa, onboarding con plan, cobro/conciliación, superadmin | ✅ (v0.8.0) | E2E de pago y conciliación ✅ |
 | 5 — Producción | Reportes, exportaciones, observabilidad, rendimiento, seguridad, despliegue | ⏳ | Checklist de go-live |
 | Posterior | POS, facturación fiscal autorizada, contabilidad, bancos | — | Requiere ADR y asesoría legal |
+
+## Fase 4 — entregado (v0.8.0)
+
+Landing con módulos disponibles y pendientes (Reporte ABC, exportaciones, importación CSV), precios desde la
+tabla de planes y enlace al registro con el plan elegido. Onboarding con elección de plan (prueba 14 días).
+Suscripción de la empresa: plan, estado, uso, instrucciones y registro de pagos (transferencia / pago móvil,
+USD o Bs. con conversión a la tasa registrada), historial. Panel de plataforma: métricas (MRR, conversión,
+pagos por conciliar), empresas (plan, uso, extender prueba, suspender/reactivar/cancelar con motivo),
+conciliación de pagos con segregación de funciones, edición de planes e instrucciones de pago. Período pagado
+con 7 días de gracia antes de solo lectura.
+
+Pendiente (pasa a F5): comprobante adjunto al pago (requiere almacenamiento de archivos), recordatorios por
+correo antes del vencimiento, doble control para montos altos, pasarela de pago, **Reporte ABC**, exportaciones
+Excel/PDF e importación CSV.
 
 ### Cambios posteriores (2026-10-26, v0.6.0)
 
