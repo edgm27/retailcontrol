@@ -1,4 +1,4 @@
-import { hasPermission, ROLE_LABELS, type Permission } from "@rc/domain";
+import { countUnreadNotifications, hasPermission, maybeRunTenantAlerts, ROLE_LABELS, type Permission } from "@rc/domain";
 import { Alert, Button } from "@rc/ui";
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -10,16 +10,24 @@ const NAV: { href: string; label: string; permission?: Permission }[] = [
   { href: "/app/inventario", label: "Inventario", permission: "inventory.read" },
   { href: "/app/productos", label: "Productos", permission: "products.read" },
   { href: "/app/lotes", label: "Lotes", permission: "inventory.read" },
+  { href: "/app/compras", label: "Compras", permission: "purchases.read" },
+  { href: "/app/proveedores", label: "Proveedores", permission: "suppliers.read" },
+  { href: "/app/reposicion", label: "Reposición", permission: "purchases.read" },
   { href: "/app/ajustes", label: "Ajustes", permission: "inventory.read" },
   { href: "/app/conteos", label: "Conteos", permission: "inventory.read" },
   { href: "/app/transferencias", label: "Transferencias", permission: "inventory.read" },
+  { href: "/app/tasas", label: "Tasas", permission: "exchange_rates.read" },
   { href: "/app/configuracion/sucursales", label: "Sucursales", permission: "branches.read" },
   { href: "/app/configuracion/usuarios", label: "Usuarios", permission: "members.read" },
+  { href: "/app/configuracion/empresa", label: "Empresa", permission: "tenant.settings.manage" },
   { href: "/app/auditoria", label: "Auditoría", permission: "audit.read" },
 ];
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
-  const { user, access } = await requireTenant();
+  const { user, access, actor } = await requireTenant();
+  // Sin worker (plan gratuito) las alertas se generan al usar la app, máx. 1 vez/hora/empresa.
+  await maybeRunTenantAlerts(actor);
+  const unread = hasPermission(access.role, "inventory.read") ? await countUnreadNotifications(actor) : 0;
   return (
     <div className="min-h-dvh">
       <header className="border-b">
@@ -31,6 +39,11 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-2 text-sm">
+            {hasPermission(access.role, "inventory.read") && (
+              <Link href="/app/alertas" className="relative rounded-full border px-3 py-1 hover:bg-accent" aria-label={`Alertas: ${unread} sin leer`}>
+                Alertas{unread > 0 && <span className="ml-1 rounded-full bg-destructive px-1.5 text-xs font-bold text-destructive-foreground" data-testid="unread-count">{unread > 99 ? "99+" : unread}</span>}
+              </Link>
+            )}
             <Link href="/empresas" className="underline-offset-4 hover:underline">Cambiar empresa</Link>
             <Link href="/cuenta/seguridad" className="underline-offset-4 hover:underline">Seguridad</Link>
             <form action={signOutAction}>

@@ -2,6 +2,23 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versionado semántico.
 
+## [0.5.0] — 2026-10-26 — Fase 3: compras y localización
+
+### Añadido
+- Proveedores con RIF (validación de formato), contacto y días de crédito.
+- Órdenes de compra (borrador → aprobada → recibida parcial → recibida / cancelada) con numeración por empresa,
+  impuestos por línea desde alícuotas configurables y totales con redondeo de documento.
+- Recepciones con o sin orden, parciales y por lote: gastos adicionales prorrateados por valor, costo puesto en
+  almacén, diferencias contra el precio pactado, idempotentes; no se recibe más de lo pendiente.
+- Tasas Bs./USD de solo inserción con fuente y referencia; estado "actualizada / desactualizada"; la tasa queda
+  congelada en cada orden aprobada y en cada recepción (los históricos no cambian).
+- Precio de referencia por producto en USD o Bs. con equivalente a la tasa vigente; proveedor preferido.
+- Reposición sugerida (mínimo, demanda de 30 días, cobertura y lo ya pedido) que prellena un borrador de orden.
+- Alertas de vencimiento por umbral configurable (3–90 días) y de stock bajo, sin duplicados, por usuario;
+  campana en el encabezado; job en el worker y ejecución automática sin worker.
+- Configuración de la empresa: moneda base (bloqueada si ya hay valoración), umbral de aprobación, días de
+  alerta, correo de alertas, existencias negativas, MFA para todos; alícuotas de impuesto.
+
 ## [0.4.0] — 2026-10-26 — Fase 2: inventario
 
 ### Añadido

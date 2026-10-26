@@ -7,7 +7,7 @@
 | 0 — Descubrimiento | PRD, arquitectura, amenazas, ERD, ADR, backlog | ✅ | Documentos en `docs/` |
 | 1 — Fundaciones | Proyecto ejecutable, PostgreSQL + RLS, empresas, usuarios, Google OIDC, MFA TOTP, RBAC, auditoría, CI | ✅ (ver pendientes) | Pruebas de aislamiento y auth en verde ✅ |
 | 2 — Inventario | Unidades, Kardex, movimientos, saldos, lotes, FEFO, vencimientos, conteos | ✅ (v0.4.0) | Concurrencia e invariantes en verde ✅ |
-| 3 — Compras y localización | Proveedores, OC, recepción, VES/USD, tasas auditadas, alertas | ⏳ | E2E de compras y precisión monetaria |
+| 3 — Compras y localización | Proveedores, OC, recepción, VES/USD, tasas auditadas, alertas | ✅ (v0.5.0) | E2E de compras y precisión monetaria ✅ |
 | 4 — Comercialización | Landing completa, onboarding con plan, cobro/conciliación, superadmin | ⏳ (límites ✅) | Onboarding y límites E2E |
 | 5 — Producción | Reportes, exportaciones, observabilidad, rendimiento, seguridad, despliegue | ⏳ | Checklist de go-live |
 | Posterior | POS, facturación fiscal autorizada, contabilidad, bancos | — | Requiere ADR y asesoría legal |
@@ -37,16 +37,28 @@
 |---|---|---|---|
 | 1 | Dos empresas con mismo SKU no ven ni modifican datos entre sí | ✅ | `tests/integration/tenant-isolation.test.ts` |
 | 2 | Usuario de dos empresas solo actúa en el contexto autorizado | ✅ | `tenant-isolation.test.ts` ("Usuario con membresía en dos empresas") |
-| 3 | Usuario sin permiso no ajusta existencias ni cambia tasas | 🟡 | Ajustes ✅ a nivel de servicio (`inventory.test.ts`); tasas: matriz verificada, el servicio llega en F3 |
+| 3 | Usuario sin permiso no ajusta existencias ni cambia tasas | ✅ | Ajustes (`inventory.test.ts`) y tasas (`purchasing.test.ts`) a nivel de servicio |
 | 4 | Recepciones repetidas con la misma clave de idempotencia no duplican stock | ⏳ F2/F3 | — |
 | 5 | Dos salidas simultáneas no producen stock negativo indebido | ⏳ F2 | — |
 | 6 | FEFO elige lote correcto y excluye vencidos/cuarentena | ⏳ F2 | — |
 | 7 | Conteo físico genera ajustes auditados con aprobación | ⏳ F2 | — |
-| 8 | Cambio de tasa BCV no altera históricos | ⏳ F3 | — |
+| 8 | Cambio de tasa BCV no altera históricos | ✅ | `purchasing.test.ts` (recepción, Kardex y costo promedio intactos; documentos inmutables en BD) + E2E `compras.spec.ts` |
 | 9 | Límites de usuarios/sucursales por plan en backend | ✅ | `tests/integration/entitlements.test.ts` (incluye concurrencia) |
 | 10 | MFA TOTP, recuperación y revocación de sesiones | ✅ | `mfa-sessions.test.ts` + E2E `apps/web/e2e/auth-mfa.spec.ts` |
 | 11 | Exportaciones y jobs no filtran datos entre empresas | 🟡 | Jobs ✅ (`jobs.test.ts`); exportaciones no existen aún (F5) |
 | 12 | Backup se restaura exitosamente en entorno de prueba | ✅ (local) | `scripts/db/backup-restore-test.sh`; paso en CI |
+
+## Fase 3 — entregado (v0.5.0)
+
+Proveedores, órdenes de compra, recepciones parciales por lote con gastos prorrateados, tasas Bs./USD
+congeladas por documento, alícuotas configurables, precio de referencia, reposición sugerida, alertas de
+vencimiento y stock bajo, configuración de la empresa.
+
+Pendiente de la Fase 3 (pasa a F4/F5): devolución a proveedor como documento propio (hoy: movimiento
+"Devolución a proveedor" con motivo), integración automática con la tasa del BCV (no hay API oficial documentada;
+ver Q-VE-2), envío real del correo resumen de alertas desde el worker (la recolección está lista; falta conectar
+SMTP), cambio de plan desde la app (las empresas nuevas quedan en Básico, que no incluye compras ni
+transferencias, hasta la Fase 4).
 
 ## Fase 2 — entregado (v0.4.0)
 

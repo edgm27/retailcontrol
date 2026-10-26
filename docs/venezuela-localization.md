@@ -9,9 +9,9 @@
 |---|---|---|
 | Locale | `es-VE` por defecto (`<html lang="es-VE">`, `Intl` con `es-VE`) | ✅ |
 | Zona horaria | `America/Caracas` por empresa (`tenant_settings.timezone`); fechas en BD en UTC; se muestran en la zona de la empresa | ✅ |
-| Números | Separador decimal coma, miles punto (`Intl.NumberFormat('es-VE')`) | ⏳ F2 (utilidad de formato) |
+| Números | Separador decimal coma, miles punto (`Intl.NumberFormat('es-VE')`); la entrada acepta "1.234,5" | ✅ |
 | Textos | Español neutro venezolano; i18n preparado (mensajes centralizados en F2) | 🟡 |
-| "Vencido" | Un lote vence al final del día de `expires_at` en la zona de la empresa (pregunta abierta Q-INV-3) | ⏳ F2 |
+| "Vencido" | Un lote vence al final del día de `expires_at` en la zona de la empresa (pregunta abierta Q-INV-3) | ✅ |
 
 ## 2. Monedas
 
@@ -22,7 +22,7 @@
 - Todos los valores monetarios, cantidades y tasas son `DECIMAL` (ver [data-model.md](data-model.md#5-tipos-numéricos));
   en TypeScript se operan con `Prisma.Decimal` (decimal.js), nunca con `number` para dinero.
 
-### Reglas de conversión y redondeo (propuesta F3)
+### Reglas de conversión y redondeo (✅ implementadas en `packages/domain/src/money.ts`)
 
 1. `importe_destino = importe_origen × tasa` con precisión completa; se redondea **solo** al totalizar el
    documento, a 2 decimales, `ROUND_HALF_UP` (configurable si el negocio lo requiere).
@@ -52,7 +52,8 @@ interface ExchangeRateSource {
 
 Cada documento (recepción, ajuste valorizado, etc.) guarda `exchange_rate_id` **y** el valor de la tasa usada.
 Los reportes históricos usan siempre el valor congelado; una tasa nueva solo afecta documentos nuevos.
-Aceptación 8 — se implementa y prueba en Fase 3.
+Aceptación 8 — ✅ implementada: órdenes (al aprobar) y recepciones guardan `exchange_rate_id` y el valor;
+las tasas y las recepciones son de solo inserción en la base de datos. Probado en `purchasing.test.ts` y E2E.
 
 ## 4. Identificación fiscal
 
@@ -62,7 +63,7 @@ Aceptación 8 — se implementa y prueba en Fase 3.
 
 ## 5. Impuestos
 
-- No se codifican alícuotas. Se modelará una tabla `tax_rates` por empresa (código, descripción, porcentaje,
+- No se codifican alícuotas. ✅ Tabla `tax_rates` por empresa (pantalla Empresa) (código, descripción, porcentaje,
   vigencia desde/hasta, tipo: IVA general/reducida/adicional, exento, exonerado) para que los valores se
   configuren y versionen sin cambiar código.
 - Los productos referencian un código de tratamiento fiscal; el cálculo de impuestos solo informa precios de

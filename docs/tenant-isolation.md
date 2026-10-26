@@ -64,7 +64,7 @@ inventario o compras: esas tablas no tienen cláusula de plataforma en sus polí
 | Exportaciones | 🟡 F5 | generación en job con contexto de la empresa solicitante; archivo con ruta `tenant/<id>/…`, URL firmada de corta duración, verificación de membresía al descargar |
 | Archivos / imágenes | 🟡 F2 | almacenamiento por prefijo de empresa; nunca rutas proporcionadas por el usuario |
 | Caché | ✅ / 🟡 | sin caché de datos compartida en Fase 1 (`force-dynamic`); claves futuras siempre prefijadas por empresa |
-| Notificaciones | 🟡 F3 | destinatarios resueltos desde membresías de esa empresa dentro del contexto |
+| Notificaciones | ✅ | generadas por empresa en su propia transacción; RLS: cada usuario solo ve las suyas; deduplicación por (empresa, usuario, clave) |
 | Logs | ✅ | sin datos de negocio en logs; correlation id; redacción de campos sensibles |
 
 ## 6. Acceso de soporte

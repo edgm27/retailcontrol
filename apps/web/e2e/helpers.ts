@@ -61,3 +61,16 @@ export async function signUpOwner(page: Page, company: string): Promise<{ email:
   await expect(page.getByTestId("active-tenant")).toContainText(company);
   return { email, secret };
 }
+
+/** Simula la acción del panel de plataforma (Fase 4): cambia el plan de la empresa de un usuario. */
+export async function setPlanForUser(email: string, planCode: string) {
+  const { config } = await import("dotenv");
+  config({ path: path.resolve(process.cwd(), "../../.env"), quiet: true });
+  const { prisma, withContext } = await import("@rc/db");
+  const user = await prisma.user.findUniqueOrThrow({ where: { email } });
+  const m = await withContext({ userId: user.id }, (tx) => tx.membership.findFirstOrThrow({ where: { userId: user.id } }));
+  await withContext({ platformAdmin: true }, async (tx) => {
+    const plan = await tx.plan.findUniqueOrThrow({ where: { code: planCode } });
+    await tx.subscription.update({ where: { tenantId: m.tenantId }, data: { planId: plan.id } });
+  });
+}

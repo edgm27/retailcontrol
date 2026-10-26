@@ -111,7 +111,14 @@ sin flujo aún; el vencimiento se evalúa por fecha (zona de la empresa) en cada
 - `stock_counts` / `stock_count_lines`: conteo físico o cíclico; la diferencia genera movimientos de ajuste con
   motivo y, sobre el umbral de `tenant_settings`, aprobación de un segundo usuario distinto del solicitante.
 
-### Fase 3 — Compras y moneda
+### Fase 3 — Compras y moneda (✅ implementado en v0.5.0)
+
+Tablas: `suppliers`, `exchange_rates` y `goods_receipts`/`goods_receipt_lines` (solo inserción + trigger),
+`tax_rates`, `purchase_orders`, `purchase_order_lines`, `notifications` (RLS por empresa y por usuario).
+Trigger genérico `app.assert_ref_same_tenant` para referencias simples (proveedor preferido, orden, tasa,
+línea de orden, movimiento). Numeración correlativa por empresa con candado transaccional.
+
+Diseño original:
 
 - `suppliers` (RIF opcional validado por formato), `purchase_orders` (borrador, aprobada, parcialmente
   recibida, recibida, cancelada), `purchase_order_lines`, `goods_receipts` con líneas por lote.

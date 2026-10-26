@@ -1,17 +1,28 @@
-import { getProductDetail, getProductStock, hasPermission } from "@rc/domain";
+import { convertAmount, getProductDetail, getProductStock, getRateStatus, hasPermission, listSuppliers } from "@rc/domain";
+import { Prisma } from "@rc/db";
 import { Badge, buttonVariants, Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyState, Field, Input, Select, Table, TBody, THead } from "@rc/ui";
 import Link from "next/link";
 import { ActionForm } from "@/components/action-form";
 import { fmtDate, fmtMoney, fmtNumber, LOT_STATUS_LABELS, UNIT_LABELS } from "@/lib/format";
 import { requireTenant } from "@/server/session";
 import { addBarcodeAction, addUnitAction, updateProductSettingsAction } from "../../inventario/actions";
+import { updateProductCommercialAction } from "../../compras/actions";
 
 export const metadata = { title: "Producto" };
 
 export default async function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { actor, access } = await requireTenant("products.read");
-  const [p, stock] = await Promise.all([getProductDetail(actor, id), getProductStock(actor, id)]);
+  const [p, stock, rate, suppliers] = await Promise.all([
+    getProductDetail(actor, id),
+    getProductStock(actor, id),
+    hasPermission(access.role, "exchange_rates.read") ? getRateStatus(actor) : Promise.resolve(null),
+    hasPermission(access.role, "suppliers.read") ? listSuppliers(actor) : Promise.resolve([]),
+  ]);
+  const ref = p.referencePrice && p.referenceCurrency ? { price: p.referencePrice, cur: p.referenceCurrency } : null;
+  const other = ref && rate?.current
+    ? convertAmount(ref.price, ref.cur, ref.cur === "USD" ? "VES" : "USD", new Prisma.Decimal(rate.current.rate))
+    : null;
   const canWrite = hasPermission(access.role, "products.write") && access.accessMode === "full";
   const total = stock.reduce((a, s) => a + Number(s.onHand), 0);
 
@@ -52,6 +63,37 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
             </Table>
           )}
         </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Precio de referencia y proveedor</CardTitle>
+          <CardDescription>
+            {ref ? (
+              <>
+                {fmtMoney(ref.price.toString(), ref.cur)}
+                {other && rate?.current && <> ≈ {fmtMoney(other.toString(), ref.cur === "USD" ? "VES" : "USD")} (tasa {fmtNumber(rate.current.rate, 8)} del {fmtDate(rate.current.effectiveDate)})</>}
+              </>
+            ) : "Sin precio de referencia."} Es informativo: RetailControl no factura.
+          </CardDescription>
+        </CardHeader>
+        {canWrite && (
+          <CardContent>
+            <ActionForm action={updateProductCommercialAction} submitLabel="Guardar" variant="outline">
+              <input type="hidden" name="productId" value={p.id} />
+              <div className="grid gap-3 sm:grid-cols-3">
+                <Field label="Precio de referencia" htmlFor="pc-price"><Input id="pc-price" name="referencePrice" inputMode="decimal" defaultValue={ref ? fmtNumber(ref.price.toString(), 2) : ""} /></Field>
+                <Field label="Moneda" htmlFor="pc-cur"><Select id="pc-cur" name="referenceCurrency" defaultValue={ref?.cur ?? "USD"}><option value="USD">USD</option><option value="VES">Bs.</option></Select></Field>
+                <Field label="Proveedor preferido" htmlFor="pc-sup">
+                  <Select id="pc-sup" name="preferredSupplierId" defaultValue={p.preferredSupplierId ?? ""}>
+                    <option value="">—</option>
+                    {suppliers.map((sup) => <option key={sup.id} value={sup.id}>{sup.name}</option>)}
+                  </Select>
+                </Field>
+              </div>
+            </ActionForm>
+          </CardContent>
+        )}
       </Card>
 
       <div className="grid gap-6 lg:grid-cols-3">
