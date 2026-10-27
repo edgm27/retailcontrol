@@ -30,19 +30,21 @@ const DISPONIBLES: Modulo[] = [
   { icon: IconUsers, title: "Usuarios, roles y 2FA", text: "Siete roles, clave temporal con cambio obligatorio y verificación en dos pasos con Google Authenticator." },
   { icon: IconLog, title: "Bitácora de auditoría", text: "Cada cambio queda registrado con quién, qué y cuándo. No se puede modificar ni borrar." },
   { icon: IconStore, title: "Suscripción y planes", text: "Prueba gratis de 14 días, elección de plan y registro de pagos por transferencia o pago móvil." },
+  { icon: IconChart, title: "Reportes y Reporte ABC", text: "Clasificación A, B y C de productos, existencias valorizadas, rotación y cobertura, mermas, vencimientos y movimientos." },
+  { icon: IconLog, title: "Exportación a Excel, CSV y PDF", text: "Descargue cualquier reporte en Excel o CSV, o imprímalo y guárdelo como PDF." },
+  { icon: IconBox, title: "Importación de productos", text: "Cargue su catálogo desde una hoja de cálculo, con vista previa y errores por fila antes de guardar." },
 ];
 
 /** En desarrollo: se muestran como pendientes, sin fecha comprometida. */
 const PENDIENTES: Modulo[] = [
-  { icon: IconChart, title: "Reporte ABC", text: "Clasificación de productos A, B y C según su participación en el valor de las salidas, para enfocar compras y conteos." },
-  { icon: IconLog, title: "Exportación a Excel y PDF", text: "Descarga de existencias, Kardex, lotes y reportes." },
-  { icon: IconBox, title: "Importación de productos", text: "Carga masiva del catálogo desde una hoja de cálculo (CSV)." },
+  { icon: IconBox, title: "Categorías, marcas y variantes", text: "Organice el catálogo por categoría y marca, con variantes de talla, color o presentación." },
+  { icon: IconCalendar, title: "Recordatorios por correo", text: "Avisos por correo antes del vencimiento de la suscripción y resúmenes de alertas." },
 ];
 
 function SectionTitle({ eyebrow, title, text }: { eyebrow: string; title: string; text?: string }) {
   return (
     <div className="mx-auto max-w-2xl text-center">
-      <p className="text-sm font-semibold uppercase tracking-wider text-[#0e9aa7]">{eyebrow}</p>
+      <p className="text-sm font-semibold uppercase tracking-wider text-[#0b6f7f]">{eyebrow}</p>
       <h2 className="mt-2 text-3xl font-extrabold tracking-tight text-[#061423] sm:text-4xl">{title}</h2>
       {text && <p className="mt-4 text-lg text-slate-600">{text}</p>}
     </div>
@@ -53,7 +55,7 @@ function ModuloCard({ m, pendiente = false }: { m: Modulo; pendiente?: boolean }
   return (
     <li className={`flex flex-col rounded-2xl p-6 ${pendiente ? "border border-dashed border-amber-300 bg-amber-50/40" : "border border-slate-200 bg-white shadow-sm"}`}>
       <div className="flex items-start justify-between gap-3">
-        <span className={`grid h-12 w-12 place-items-center rounded-xl ${pendiente ? "bg-amber-100 text-amber-800" : "bg-[#e6fbfb] text-[#0e9aa7]"}`}>
+        <span className={`grid h-12 w-12 place-items-center rounded-xl ${pendiente ? "bg-amber-100 text-amber-800" : "bg-[#e6fbfb] text-[#0b6f7f]"}`}>
           <m.icon className="h-6 w-6" />
         </span>
         <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${pendiente ? "bg-amber-100 text-amber-900" : "bg-emerald-50 text-emerald-700"}`}>
@@ -86,7 +88,7 @@ export function Funcionalidades() {
           Pendiente
           <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-sm font-semibold text-amber-900">en desarrollo</span>
         </h3>
-        <ul className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3" data-testid="modulos-pendientes">
+        <ul className="mt-5 grid gap-5 sm:grid-cols-2" data-testid="modulos-pendientes">
           {PENDIENTES.map((m) => <ModuloCard key={m.title} m={m} pendiente />)}
         </ul>
         <p className="mt-6 text-sm text-slate-500">
@@ -129,11 +131,10 @@ export interface PlanView {
 }
 
 const FEATURE_LABELS: Record<string, string> = {
-  catalogo: "Catálogo, movimientos, lotes y vencimientos",
+  catalogo: "Inventario, lotes, vencimientos, reportes y exportación",
   compras: "Compras, recepciones y proveedores",
   transferencias: "Transferencias entre almacenes",
   alertas: "Alertas de stock y vencimiento",
-  reportes_avanzados: "Reportes avanzados (Reporte ABC pendiente)",
   auditoria_ampliada: "Auditoría ampliada",
   soporte_prioritario: "Soporte prioritario",
 };
@@ -220,7 +221,7 @@ export function Preguntas() {
     ["¿Necesito tarjeta de crédito para probar?", "No. La prueba gratuita de 14 días no requiere tarjeta."],
     ["¿RetailControl emite facturas fiscales?", "No. RetailControl controla su inventario; no sustituye su sistema de facturación o máquina fiscal homologada."],
     ["¿Puedo trabajar en dólares y bolívares?", "Sí. Puede registrar precios de referencia en USD o Bs. La tasa usada en cada documento se guarda y no cambia después."],
-    ["¿Qué pasa con mis datos si dejo de pagar?", "No se borran. Su cuenta pasa a modo de solo lectura y puede seguir consultándolos. La exportación a Excel/PDF está en desarrollo."],
+    ["¿Qué pasa con mis datos si dejo de pagar?", "No se borran. Su cuenta pasa a modo de solo lectura: puede seguir consultándolos y exportarlos a Excel o CSV."],
     ["¿Cómo pago la suscripción?", "Desde la aplicación registra su pago por transferencia o pago móvil con la referencia; lo verificamos y su plan queda activo."],
     ["¿Funciona desde el teléfono?", "Sí. Está diseñado para usarse desde el celular, la tablet o la computadora."],
   ];
@@ -231,8 +232,8 @@ export function Preguntas() {
         {faqs.map(([q, a]) => (
           <details key={q} className="group rounded-xl border border-slate-200 p-5 open:shadow-sm">
             <summary className="cursor-pointer list-none font-semibold text-[#061423] [&::-webkit-details-marker]:hidden">
-              <span className="mr-2 text-[#0e9aa7] group-open:hidden">+</span>
-              <span className="mr-2 hidden text-[#0e9aa7] group-open:inline">−</span>
+              <span className="mr-2 text-[#0b6f7f] group-open:hidden">+</span>
+              <span className="mr-2 hidden text-[#0b6f7f] group-open:inline">−</span>
               {q}
             </summary>
             <p className="mt-3 text-slate-600">{a}</p>

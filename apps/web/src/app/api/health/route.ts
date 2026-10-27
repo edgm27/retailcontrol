@@ -13,8 +13,10 @@ export async function GET() {
     mfaEnforced: process.env.MFA_ENFORCE_PRIVILEGED_ROLES !== "false",
   };
   try {
+    const t0 = performance.now();
     await prisma.$queryRaw`SELECT 1`;
-    return Response.json({ status: "ok", db: "ok", ...info });
+    const dbLatencyMs = Math.round(performance.now() - t0);
+    return Response.json({ status: "ok", db: "ok", dbLatencyMs, uptimeS: Math.round(process.uptime()), ...info }, { headers: { "Cache-Control": "no-store" } });
   } catch {
     return Response.json({ status: "degraded", db: "error", ...info }, { status: 503 });
   }

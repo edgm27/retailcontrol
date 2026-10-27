@@ -1,13 +1,15 @@
 import { expect, test } from "@playwright/test";
 import { grantSuperadmin, signUpOwner } from "./helpers";
 
-test("landing: muestra módulos disponibles y el Reporte ABC como pendiente", async ({ page }) => {
+test("landing: muestra módulos disponibles (incluido el Reporte ABC) y los pendientes", async ({ page }) => {
   await page.goto("/");
   const disponibles = page.getByTestId("modulos-disponibles");
   await expect(disponibles.getByText("Compras y recepciones")).toBeVisible();
   await expect(disponibles.getByText("Tablero de indicadores")).toBeVisible();
+  await expect(disponibles.getByRole("heading", { name: "Reportes y Reporte ABC" })).toBeVisible();
+  await expect(disponibles.getByRole("heading", { name: "Exportación a Excel, CSV y PDF" })).toBeVisible();
   const pendientes = page.getByTestId("modulos-pendientes");
-  await expect(pendientes.getByRole("heading", { name: "Reporte ABC" })).toBeVisible();
+  await expect(pendientes.getByRole("heading", { name: "Categorías, marcas y variantes" })).toBeVisible();
   await expect(pendientes.getByText("Pendiente").first()).toBeVisible();
   await expect(page.locator("#precios").getByRole("link", { name: /Comenzar gratis/ }).first()).toHaveAttribute("href", /onboarding%3Fplan%3D/);
 });

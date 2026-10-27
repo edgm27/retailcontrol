@@ -23,6 +23,7 @@ export const NAV_ICONS = {
   branch: (p: P) => <svg {...base} {...p}><path d="M3 9h18l-1.5-5h-15z" /><path d="M4 9v11h16V9M9 20v-6h6v6" /></svg>,
   building: (p: P) => <svg {...base} {...p}><path d="M4 21V5l8-2v18M12 7l8 3v11M8 9h0M8 13h0M8 17h0M16 13h0M16 17h0" /><path d="M2 21h20" /></svg>,
   log: (p: P) => <svg {...base} {...p}><path d="M6 3h9l4 4v14H6z" /><path d="M14 3v5h5M9 12h7M9 16h7" /></svg>,
+  chart: (p: P) => <svg {...base} {...p}><path d="M5 20V12M10 20V7M15 20v-9M20 20V4" /><path d="M3 20h18" /></svg>,
   card: (p: P) => <svg {...base} {...p}><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 10h18M7 15h4" /></svg>,
   menu: (p: P) => <svg {...base} {...p}><path d="M4 6h16M4 12h16M4 18h16" /></svg>,
   close: (p: P) => <svg {...base} {...p}><path d="M6 6l12 12M18 6 6 18" /></svg>,

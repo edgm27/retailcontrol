@@ -61,7 +61,7 @@ inventario o compras: esas tablas no tienen cláusula de plataforma en sus polí
 |---|---|---|
 | Jobs | ✅ | `forEachActiveTenant()` lista ids con contexto de plataforma y procesa cada empresa en su propia transacción con su contexto |
 | Búsqueda | ✅ | consultas siempre dentro de `withTenant`; probado con búsqueda de texto |
-| Exportaciones | 🟡 F5 | generación en job con contexto de la empresa solicitante; archivo con ruta `tenant/<id>/…`, URL firmada de corta duración, verificación de membresía al descargar |
+| Exportaciones | ✅ v0.9.0 | se generan en la misma petición con el contexto RLS de la empresa activa (sin archivos intermedios ni URLs públicas); permiso `reports.export`, sesión verificada y auditoría `report.exported`. Prueba: `reports.test.ts` |
 | Archivos / imágenes | 🟡 F2 | almacenamiento por prefijo de empresa; nunca rutas proporcionadas por el usuario |
 | Caché | ✅ / 🟡 | sin caché de datos compartida en Fase 1 (`force-dynamic`); claves futuras siempre prefijadas por empresa |
 | Notificaciones | ✅ | generadas por empresa en su propia transacción; RLS: cada usuario solo ve las suyas; deduplicación por (empresa, usuario, clave) |

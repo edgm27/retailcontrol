@@ -1,5 +1,5 @@
 import { hasPermission, listProducts } from "@rc/domain";
-import { Badge, Card, CardContent, CardHeader, CardTitle, EmptyState, Field, Input, Select, Table, TBody, THead } from "@rc/ui";
+import { Badge, buttonVariants, Card, CardContent, CardHeader, CardTitle, EmptyState, Field, Input, Select, Table, TBody, THead } from "@rc/ui";
 import Link from "next/link";
 import { ActionForm } from "@/components/action-form";
 import { requireTenant } from "@/server/session";
@@ -18,7 +18,10 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
 
   return (
     <div className="grid gap-6">
-      <h1 className="text-2xl font-bold">Productos</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold">Productos</h1>
+        {canWrite && <Link href="/app/productos/importar" className={buttonVariants({ variant: "outline", size: "sm" })}>Importar desde CSV</Link>}
+      </div>
       <form role="search" className="flex gap-2" action="/app/productos">
         <label htmlFor="q" className="sr-only">Buscar por SKU o nombre</label>
         {/* Un lector de código de barras USB funciona como teclado: escribe y envía Enter. */}

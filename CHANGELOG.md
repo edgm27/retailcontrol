@@ -2,6 +2,27 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versionado semántico.
 
+## [0.9.0] — 2026-10-27 — Fase 5: reportes, exportaciones y preparación para producción
+
+### Añadido
+- **Reportes** (`/app/reportes`, menú General): Reporte ABC, existencias valorizadas, rotación y cobertura, mermas,
+  vencimientos y movimientos, con filtros de período y almacén.
+- **Exportación** a Excel (XLSX) y CSV listo para Excel en español; **PDF** desde la vista imprimible. Hasta
+  50 000 filas, permiso `reports.export`, auditoría y protección contra inyección de fórmulas.
+- **Importación de productos** desde CSV con plantilla, vista previa, errores por fila y aplicación todo o nada.
+- **Observabilidad**: OpenTelemetry opcional, errores de servidor con id de correlación, registro de consultas
+  lentas, latencia de BD en `/api/health`.
+- **Prueba de carga** (`pnpm perf:load`, 50 000 productos / 300 000 movimientos) y auditoría de accesibilidad
+  WCAG 2.2 AA (axe) en E2E.
+- Runbooks (incidentes, respaldo, despliegue/rollback, secretos) y checklist de salida a producción.
+
+### Cambiado
+- Tablero de Inicio 5× más rápido con muchos datos (consultas en paralelo e índice por fecha); Reporte ABC calculado en SQL.
+- Landing: Reporte ABC, exportación e importación pasan a «Disponible».
+
+### Corregido
+- Contraste de los subtítulos del landing (WCAG AA).
+
 ## [0.8.1] — 2026-10-26
 
 ### Corregido

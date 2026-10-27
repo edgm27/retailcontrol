@@ -16,6 +16,7 @@ const NAV: { label: string; items: Item[] }[] = [
     items: [
       { href: "/app", label: "Inicio", icon: "home" },
       { href: "/app/alertas", label: "Alertas", icon: "bell", permission: "inventory.read", alerts: true },
+      { href: "/app/reportes", label: "Reportes", icon: "chart", permission: "reports.read" },
     ],
   },
   {
@@ -92,7 +93,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   const Logout = NAV_ICONS.logout;
 
   return (
-    <div className="min-h-dvh lg:grid lg:grid-cols-[16.5rem_1fr]">
+    <div className="app-shell min-h-dvh lg:grid lg:grid-cols-[16.5rem_1fr]">
       <aside className="sidebar-bg hidden lg:sticky lg:top-0 lg:flex lg:h-dvh lg:flex-col lg:gap-6 lg:overflow-y-auto lg:px-4 lg:py-5">
         <Link href="/app" aria-label="RetailControl, inicio" className="px-2">
           <Logo compact />

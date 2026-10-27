@@ -17,7 +17,7 @@ const config: NextConfig = {
   transpilePackages: ["@rc/domain", "@rc/db", "@rc/ui"],
   serverExternalPackages: ["pino", "nodemailer", "qrcode"],
   experimental: {
-    serverActions: { bodySizeLimit: "1mb" },
+    serverActions: { bodySizeLimit: "2mb" }, // importación CSV (máx. 1 MB de texto)
   },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];

@@ -9,8 +9,29 @@
 | 2 — Inventario | Unidades, Kardex, movimientos, saldos, lotes, FEFO, vencimientos, conteos | ✅ (v0.4.0) | Concurrencia e invariantes en verde ✅ |
 | 3 — Compras y localización | Proveedores, OC, recepción, VES/USD, tasas auditadas, alertas | ✅ (v0.5.0) | E2E de compras y precisión monetaria ✅ |
 | 4 — Comercialización | Landing completa, onboarding con plan, cobro/conciliación, superadmin | ✅ (v0.8.0) | E2E de pago y conciliación ✅ |
-| 5 — Producción | Reportes, exportaciones, observabilidad, rendimiento, seguridad, despliegue | ⏳ | Checklist de go-live |
+| 5 — Producción | Reportes, exportaciones, observabilidad, rendimiento, seguridad, despliegue | ✅ código (v0.9.0) · ⏳ infraestructura | [go-live-checklist.md](go-live-checklist.md) |
 | Posterior | POS, facturación fiscal autorizada, contabilidad, bancos | — | Requiere ADR y asesoría legal |
+
+## Fase 5 — entregado (v0.9.0)
+
+Código y operación listos; la infraestructura de producción requiere contratar servicios (ver
+[go-live-checklist.md](go-live-checklist.md)).
+
+- **Reportes** (`/app/reportes`): Reporte ABC (A ≤ 80 %, B ≤ 95 % del valor de las salidas; productos sin salidas),
+  existencias valorizadas, rotación y cobertura, mermas, vencimientos y movimientos; filtros de período y almacén.
+- **Exportaciones** Excel (XLSX) y CSV (Excel en español: `;`, coma decimal, UTF-8 con BOM), con protección contra
+  inyección de fórmulas, permiso `reports.export`, auditoría y hasta 50 000 filas; **PDF** mediante vista imprimible.
+- **Importación CSV de productos**: plantilla, vista previa con errores por fila, todo o nada, SKU existentes omitidos
+  o actualizados, códigos de barras, detección de codificación (UTF-8 / Windows-1252).
+- **Rendimiento**: prueba de carga con 50 000 productos; índice por fecha, consultas del tablero en paralelo,
+  ABC en SQL ([performance.md](performance.md)).
+- **Observabilidad**: OpenTelemetry opcional, errores con id de correlación, consultas lentas, salud con latencia
+  ([observability.md](observability.md)).
+- **Accesibilidad**: auditoría axe WCAG 2.2 AA en CI ([accessibility.md](accessibility.md)).
+- **Runbooks** y **checklist de salida a producción**.
+
+Pendiente: agregados diarios para el tablero/ABC de 90 días, revisión manual de accesibilidad, pentest externo,
+comprobante adjunto al pago, recordatorios de pago por correo, doble control de pagos altos, categorías y variantes.
 
 ## Fase 4 — entregado (v0.8.0)
 
@@ -57,14 +78,14 @@ Excel/PDF e importación CSV.
 | 1 | Dos empresas con mismo SKU no ven ni modifican datos entre sí | ✅ | `tests/integration/tenant-isolation.test.ts` |
 | 2 | Usuario de dos empresas solo actúa en el contexto autorizado | ✅ | `tenant-isolation.test.ts` ("Usuario con membresía en dos empresas") |
 | 3 | Usuario sin permiso no ajusta existencias ni cambia tasas | ✅ | Ajustes (`inventory.test.ts`) y tasas (`purchasing.test.ts`) a nivel de servicio |
-| 4 | Recepciones repetidas con la misma clave de idempotencia no duplican stock | ⏳ F2/F3 | — |
-| 5 | Dos salidas simultáneas no producen stock negativo indebido | ⏳ F2 | — |
-| 6 | FEFO elige lote correcto y excluye vencidos/cuarentena | ⏳ F2 | — |
-| 7 | Conteo físico genera ajustes auditados con aprobación | ⏳ F2 | — |
+| 4 | Recepciones repetidas con la misma clave de idempotencia no duplican stock | ✅ | `inventory.test.ts` («aceptación 4», secuencial y simultánea) |
+| 5 | Dos salidas simultáneas no producen stock negativo indebido | ✅ | `inventory.test.ts` («aceptación 5») |
+| 6 | FEFO elige lote correcto y excluye vencidos/cuarentena | ✅ | `inventory.test.ts` («Lotes, vencimientos y FEFO») + E2E `inventario.spec.ts` |
+| 7 | Conteo físico genera ajustes auditados con aprobación | ✅ | `inventory.test.ts` («Ajustes y conteos con aprobación») |
 | 8 | Cambio de tasa BCV no altera históricos | ✅ | `purchasing.test.ts` (recepción, Kardex y costo promedio intactos; documentos inmutables en BD) + E2E `compras.spec.ts` |
 | 9 | Límites de usuarios/sucursales por plan en backend | ✅ | `tests/integration/entitlements.test.ts` (incluye concurrencia) |
 | 10 | MFA TOTP, recuperación y revocación de sesiones | ✅ | `mfa-sessions.test.ts` + E2E `apps/web/e2e/auth-mfa.spec.ts` |
-| 11 | Exportaciones y jobs no filtran datos entre empresas | 🟡 | Jobs ✅ (`jobs.test.ts`); exportaciones no existen aún (F5) |
+| 11 | Exportaciones y jobs no filtran datos entre empresas | ✅ | `jobs.test.ts` + `reports.test.ts` («Exportaciones (aceptación 11)»: CSV y XLSX de cada reporte) |
 | 12 | Backup se restaura exitosamente en entorno de prueba | ✅ (local) | `scripts/db/backup-restore-test.sh`; paso en CI |
 
 ## Fase 3 — entregado (v0.5.0)

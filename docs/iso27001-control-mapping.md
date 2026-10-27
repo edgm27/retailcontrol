@@ -24,7 +24,7 @@ Responsables propuestos (a confirmar): **CTO**, **SecOps**, **Producto**, **Dire
 | 5.18 Derechos de acceso | Altas, cambios de rol y bajas auditadas; revocación inmediata | ✅ | `audit_events`, `mfa-sessions.test.ts` | CTO |
 | 5.19–5.22 Proveedores | Google, SMTP, hosting, pasarelas | ⏳ | Evaluación de proveedores y acuerdos (DPA) | Dirección |
 | 5.23 Servicios en la nube | Selección de proveedor con cifrado en reposo, respaldos, regiones | ⏳ | Pregunta abierta Q-INF-1 | CTO |
-| 5.24–5.28 Gestión de incidentes | Plan de respuesta, registro, lecciones aprendidas | ⏳ | Runbook en F5 | SecOps |
+| 5.24–5.28 Gestión de incidentes | Plan de respuesta, registro, lecciones aprendidas | 🟡 | [runbooks/incidentes.md](runbooks/incidentes.md); falta ejercitarlo | SecOps |
 | 5.29–5.30 Continuidad | Respaldos verificados; RPO/RTO objetivo | 🟡 | `scripts/db/backup-restore-test.sh` en CI; PITR en F5 | CTO |
 | 5.31 Requisitos legales | Fiscal (SENIAT), protección de datos, contratos | 🟡 | [venezuela-localization.md](venezuela-localization.md), [open-questions.md](open-questions.md) | Dirección |
 | 5.33 Protección de registros | Auditoría inmutable; retención definida | 🟡 | Trigger + privilegios; política de retención pendiente | CTO |
@@ -57,10 +57,10 @@ del proveedor) — ⏳ al seleccionar proveedor. Equipos de trabajo: 7.9/7.10 cu
 | 8.9 Gestión de configuración | Infraestructura como código | ⏳ | F5 |
 | 8.10 Eliminación de información | Política de retención; no se borran datos por impago | 🟡 | [billing-strategy.md](billing-strategy.md) |
 | 8.11 Enmascaramiento | Redacción en logs y auditoría | ✅ | `audit.ts` `redact()`, `logger.ts` |
-| 8.12 Prevención de fuga de datos | Exportaciones con control de empresa (F5) | ⏳ | — |
+| 8.12 Prevención de fuga de datos | Exportaciones con control de empresa, permiso y auditoría | 🟡 | `reports.test.ts`; sin DLP de contenido |
 | 8.13 Respaldo | Respaldo cifrado + restauración verificada automáticamente | ✅ | `backup-restore-test.sh` (ejecutado localmente; en CI) |
 | 8.15 Registro (logging) | Logs JSON con correlation id; auditoría de negocio | ✅ | `logger.ts`, `audit_events` |
-| 8.16 Monitoreo | Métricas, trazas y alertas | ⏳ | OpenTelemetry en F5 |
+| 8.16 Monitoreo | Métricas, trazas y alertas | 🟡 | [observability.md](observability.md); falta proveedor y alertas |
 | 8.17 Sincronización de reloj | NTP del proveedor; TOTP tolera ±30 s | 🟡 | Verificar en infraestructura |
 | 8.20–8.22 Seguridad de redes | BD solo en red privada; TLS en el borde | ⏳ | F5 |
 | 8.24 Criptografía | AES-256-GCM (secretos TOTP), HMAC-SHA256 (códigos), SHA-256 (tokens), TLS; claves fuera del código | ✅ | `crypto.ts` |

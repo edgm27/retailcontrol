@@ -503,6 +503,8 @@ model StockMovement {
   lot       Lot?      @relation(fields: [lotId], references: [id], onDelete: Restrict)
 
   @@index([tenantId, productId, createdAt])
+  // Reportes y tablero por período (filtro created_at >= inicio local en UTC).
+  @@index([tenantId, createdAt])
   @@index([tenantId, warehouseId, createdAt])
   @@index([tenantId, operationId])
   @@map("stock_movements")

@@ -78,3 +78,16 @@ html { scroll-behavior: smooth; }
     radial-gradient(700px 260px at 100% 0%, rgba(46, 230, 224, .22), transparent 65%),
     linear-gradient(120deg, #061423 0%, #0b2033 60%, #12304a 100%);
 }
+
+/* Impresión / PDF (Reportes): solo el contenido, sin menú ni controles. */
+@media print {
+  aside, header, nav, .no-print, .skip-link { display: none !important; }
+  body { background: #fff; }
+  .app-shell { display: block !important; }
+  .app-shell > div { display: block !important; }
+  main { max-width: none !important; padding: 0 !important; }
+  table { font-size: 10px; }
+  thead { display: table-header-group; }
+  tr { break-inside: avoid; }
+  * { box-shadow: none !important; }
+}

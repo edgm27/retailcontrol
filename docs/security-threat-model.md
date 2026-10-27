@@ -39,13 +39,15 @@ SMTP · Operadores de plataforma ↔ datos de empresas · CI/CD ↔ repositorio 
 | T15 | Elevación | Operador de plataforma lee inventarios | Políticas RLS sin cláusula de plataforma en tablas de negocio; `support_grants` temporales (F4) | B | Separación de funciones en operación (F4) |
 | T16 | Divulgación | Secretos en el repositorio o en logs | `.env` ignorado, gitleaks en CI, redacción en pino, auditoría con redacción de claves sensibles | B | Gestor de secretos en producción |
 | T17 | Manipulación | Dependencia comprometida (cadena de suministro) | Lockfile congelado, versiones exactas, `pnpm audit` en CI, Dependabot, `onlyBuiltDependencies` | M | Fijar acciones de GitHub por SHA; SBOM; firma de imágenes |
-| T18 | Divulgación | Fuga por exportaciones o jobs | Jobs con contexto por empresa (probado) | B | Exportaciones F5 con URL firmada y verificación de membresía |
+| T18 | Divulgación | Fuga por exportaciones o jobs | Jobs y exportaciones con contexto RLS por empresa (probado); exportación en la misma petición, sin archivos públicos; auditoría | B | Límite de descargas y alertas por volumen anómalo |
 | T19 | Pérdida de datos | Borrado accidental / ransomware | Respaldo cifrado + prueba de restauración automatizada | M | PITR del proveedor, copia fuera de la cuenta principal, simulacros trimestrales |
 | T20 | Manipulación | Reescritura de documentos históricos con la tasa actual (F3) | Diseño: tasa congelada en el documento | — | Implementar en F3 con pruebas |
 | T21 | Suplantación / elevación | Una empresa restablece la clave o la 2FA de una cuenta que también usa otra empresa | Solo cuentas administradas (`managed_by_tenant_id` = empresa y sin otras membresías); clave temporal con cambio obligatorio; sesiones cerradas; auditoría | B | Notificar por correo al usuario cuando se restablece su clave |
 | T22 | Divulgación | Clave temporal visible para el administrador | Se muestra una sola vez, no se guarda en claro ni se registra; debe cambiarse en el primer ingreso | B | Opción de enviar enlace de un solo uso en vez de clave |
 | T23 | Fraude / manipulación | Empresa marca su propio pago como aprobado o altera un pago revisado | RLS (solo plataforma actualiza), trigger de inmutabilidad, segregación revisor ≠ registrador, auditoría | B | Comprobante adjunto y doble control para montos altos (F5) |
 | T24 | Elevación | Acceso indebido al panel de plataforma | Rol verificado en BD en cada operación, MFA obligatorio, 404 para no autorizados, solo metadatos | B | Alertas de acceso al panel; lista de IP permitidas |
+| T25 | Manipulación | Inyección de fórmulas en CSV/Excel exportados (texto que empieza con = + - @) | Se antepone apóstrofo; XLSX con celdas de texto sin fórmulas (probado) | B | — |
+| T26 | DoS | Importación masiva o exportaciones repetidas | Límites: 1 MB / 5 000 filas por importación, 60 exportaciones/h por usuario, 50 000 filas por archivo | M | Cola de trabajos para archivos grandes |
 
 ## 4. Recuperación de acceso (procedimiento propuesto)
 
