@@ -48,6 +48,12 @@ Los secretos `RC_APP_PASSWORD`, `AUTH_SECRET`, `MFA_ENCRYPTION_KEY` y `RECOVERY_
 Por segregación de funciones, nadie puede conciliar un pago que registró. Para probar el flujo completo use
 otra empresa con otro usuario (o un segundo superadministrador).
 
+## Datos de prueba (empresa de demostración)
+
+Entre con el usuario de `ADMIN_EMAIL` → **Cambiar empresa** → **Crear empresa de demostración**. Se genera en
+segundo plano (1–5 minutos en Render gratuito) una empresa aparte con datos ficticios; sus empresas actuales no se
+modifican. Actualice la lista y entre cuando el nombre ya no diga «generando datos…».
+
 ## Pasos
 
 1. En Render: **New → Blueprint** → conecte su cuenta de GitHub → elija el repositorio.

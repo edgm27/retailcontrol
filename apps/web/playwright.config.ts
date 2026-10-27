@@ -34,6 +34,8 @@ export default defineConfig({
       DEV_MAILBOX_DIR: MAILBOX_DIR,
       AUTH_URL: `http://localhost:${PORT}`,
       AUTH_TRUST_HOST: "true",
+      // Muestra «Crear empresa de demostración» a todos (solo en pruebas).
+      DEMO_DATA_ENABLED: "true",
     },
   },
 });

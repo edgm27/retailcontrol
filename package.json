@@ -1,7 +1,7 @@
 {
   "name": "retailcontrol",
   "private": true,
-  "version": "0.10.0",
+  "version": "0.11.0",
   "description": "RetailControl — SaaS multiempresa de control de inventarios para comercios venezolanos",
   "packageManager": "pnpm@10.28.0",
   "engines": {
@@ -25,6 +25,7 @@
     "test:integration": "vitest run --project integration",
     "test:e2e": "pnpm --filter @rc/web test:e2e",
     "backup:test": "bash scripts/db/backup-restore-test.sh",
+    "demo:generate": "pnpm --filter @rc/db exec dotenv -e ../../.env -- tsx ../../scripts/demo/generate.ts",
     "perf:load": "pnpm --filter @rc/db exec dotenv -e ../../.env -- tsx ../../scripts/perf/load-test.ts",
     "postinstall": "pnpm --filter @rc/db generate"
   },

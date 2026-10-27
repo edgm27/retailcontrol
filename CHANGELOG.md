@@ -2,6 +2,20 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versionado semántico.
 
+## [0.11.0] — 2026-10-27 — Empresa de demostración con datos de prueba
+
+### Añadido
+- **Crear empresa de demostración** (Cambiar empresa → «Datos de prueba»): genera en segundo plano, en una empresa
+  NUEVA, datos ficticios para probar todas las funciones: 125 productos (víveres, lácteos y charcutería, limpieza,
+  bebidas, chucherías y ferretería) con presentaciones y códigos de barras, 6 proveedores, tasas Bs./USD diarias,
+  ~56 recepciones (USD y Bs.) con lotes y vencimientos, 60 días de ventas, mermas, transferencias a una segunda
+  sucursal, conteos (uno aplicado y uno por aprobar), órdenes de compra (borrador, aprobada y recibida parcial),
+  ajuste pendiente, lote en cuarentena, productos con stock bajo y alertas. Incluye un usuario «Gerente Demo».
+- Disponible para el administrador inicial (`ADMIN_EMAIL`), roles de plataforma, o todos con `DEMO_DATA_ENABLED=true`.
+  Máximo 3 por día por usuario. CLI: `pnpm demo:generate <correo>`.
+- Usa los mismos servicios que la app (reglas, auditoría e invariantes); la historia se fecha en el pasado con un
+  reloj simulado interno que ningún flujo de usuario activa.
+
 ## [0.10.0] — 2026-10-27 — Recepción de mercancía con el celular
 
 ### Añadido

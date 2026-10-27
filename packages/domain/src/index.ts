@@ -33,3 +33,4 @@ export * from "./services/reports";
 export * from "./services/report-export";
 export { neutralizeFormula, toCsv, toXlsx } from "./export/tabular";
 export * from "./services/product-import";
+export { generateDemoCompany, DEMO_COMPANY_NAME, type DemoOptions, type DemoResult } from "./demo/generate";

@@ -11,6 +11,7 @@ import {
   allocateFefo,
   applyBalanceDelta,
   assertLotDispatchable,
+  demoClock,
   getInventoryPolicy,
   insertMovement,
   isExpired,
@@ -148,6 +149,7 @@ export async function resolveInboundLot(
   if (input.type === "RETURN_IN") throw validation("Una devolución debe referirse a un lote existente.");
   const created = await tx.lot.create({
     data: {
+      ...(demoClock.getStore() ? { receivedAt: demoClock.getStore() } : {}),
       tenantId: actor.tenantId,
       productId: product.id,
       lotNumber: input.lotNumber,

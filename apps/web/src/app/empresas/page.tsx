@@ -4,6 +4,9 @@ import Link from "next/link";
 import { requireVerifiedUser } from "@/server/session";
 import { switchTenantAction } from "../app/actions";
 import { AuthShell } from "@/components/shell/auth-shell";
+import { canCreateDemo } from "@/server/demo";
+import { createDemoAction } from "./actions";
+import { DemoButton } from "./demo-button";
 
 export const metadata = { title: "Sus empresas" };
 
@@ -24,14 +27,27 @@ export default async function TenantsPage() {
                 <p className="text-sm text-muted-foreground">{ROLE_LABELS[t.role]}</p>
               </div>
               <input type="hidden" name="tenantId" value={t.tenantId} />
-              <Button type="submit" size="sm" variant={t.tenantId === user.activeTenantId ? "secondary" : "default"}>
+              <Button type="submit" size="sm" variant={t.tenantId === user.activeTenantId ? "secondary" : "default"} disabled={t.name.includes("(generando datos…)")}>
                 {t.tenantId === user.activeTenantId ? "Activa" : "Entrar"}
               </Button>
             </form>
           ))}
           <Link href="/onboarding" className={buttonVariants({ variant: "outline" })}>Registrar otra empresa</Link>
+          {tenants.some((t) => t.name.includes("(generando datos…)")) && (
+            <Link href="/empresas" className="text-center text-sm font-medium text-primary underline">Actualizar lista</Link>
+          )}
         </CardContent>
       </Card>
+      {canCreateDemo(user) && (
+        <Card className="mt-4">
+          <CardHeader>
+            <CardTitle className="text-base">Datos de prueba</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <DemoButton action={createDemoAction} />
+          </CardContent>
+        </Card>
+      )}
     </AuthShell>
   );
 }

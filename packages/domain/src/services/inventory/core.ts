@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from "node:async_hooks";
 import { randomUUID } from "node:crypto";
 import { Prisma, type Tx } from "@rc/db";
 import { insufficientStock, notFound, validation } from "../../errors";
@@ -6,6 +7,13 @@ import type { TenantActor } from "../types";
 
 type Decimal = Prisma.Decimal;
 export const D = (v: Prisma.Decimal.Value) => new Prisma.Decimal(v);
+
+/**
+ * Reloj simulado SOLO para el generador de datos de demostración: permite registrar historia
+ * (movimientos y lotes con fecha pasada) usando los mismos servicios e invariantes.
+ * Ningún flujo de usuario lo activa; fuera de demoClock.run() se usa la hora real de la BD.
+ */
+export const demoClock = new AsyncLocalStorage<Date>();
 export const ZERO_UUID = "00000000-0000-0000-0000-000000000000";
 
 export interface InventoryPolicy {
@@ -212,6 +220,7 @@ export async function insertMovement(tx: Tx, m: MovementInsert) {
       referenceId: m.referenceId ?? null,
       reversesMovementId: m.reversesMovementId ?? null,
       actorUserId: m.actorUserId,
+      ...(demoClock.getStore() ? { createdAt: demoClock.getStore() } : {}),
     },
   });
 }
