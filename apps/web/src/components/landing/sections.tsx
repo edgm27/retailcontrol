@@ -25,6 +25,7 @@ const DISPONIBLES: Modulo[] = [
   { icon: IconCheckCircle, title: "Ajustes, mermas y conteos", text: "Ajustes con motivo y aprobación por monto, conteos físicos con diferencias aprobadas." },
   { icon: IconStore, title: "Sucursales, almacenes y transferencias", text: "Existencias por almacén y transferencias entre sucursales con salida y entrada conciliadas." },
   { icon: IconScan, title: "Compras y recepciones", text: "Órdenes de compra con aprobación, recepción parcial por lote, gastos prorrateados y reposición sugerida." },
+  { icon: IconScan, title: "Recepción con el celular", text: "Escanee el código de barras con la cámara y registre cantidad, costo, lote y vencimiento en el momento." },
   { icon: IconUsers, title: "Proveedores y tasas Bs./USD", text: "Proveedores con RIF, tasa del día con fuente; la tasa queda congelada en cada documento." },
   { icon: IconShield, title: "Alertas", text: "Avisos de stock bajo y de vencimientos según los días que usted configure." },
   { icon: IconUsers, title: "Usuarios, roles y 2FA", text: "Siete roles, clave temporal con cambio obligatorio y verificación en dos pasos con Google Authenticator." },

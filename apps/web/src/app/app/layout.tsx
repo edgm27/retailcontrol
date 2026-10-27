@@ -35,6 +35,7 @@ const NAV: { label: string; items: Item[] }[] = [
     items: [
       { href: "/app/compras", label: "Compras", icon: "cart", permission: "purchases.read" },
       { href: "/app/recepciones", label: "Recepciones", icon: "truck", permission: "purchases.read" },
+      { href: "/app/recepciones/escanear", label: "Recibir con escáner", icon: "scan", permission: "purchases.receive" },
       { href: "/app/proveedores", label: "Proveedores", icon: "users", permission: "suppliers.read" },
       { href: "/app/reposicion", label: "Reposición", icon: "refresh", permission: "purchases.read" },
       { href: "/app/tasas", label: "Tasas", icon: "rate", permission: "exchange_rates.read" },

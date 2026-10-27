@@ -17,6 +17,8 @@ export default defineConfig({
     locale: "es-VE",
     timezoneId: "America/Caracas",
     trace: "retain-on-failure",
+    // Cámara simulada (sin diálogo de permiso) para probar el escáner de la recepción.
+    launchOptions: { args: ["--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream"] },
   },
   projects: [
     { name: "movil", use: { ...devices["Pixel 7"] } },

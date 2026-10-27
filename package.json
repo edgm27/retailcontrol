@@ -1,7 +1,7 @@
 {
   "name": "retailcontrol",
   "private": true,
-  "version": "0.9.0",
+  "version": "0.10.0",
   "description": "RetailControl — SaaS multiempresa de control de inventarios para comercios venezolanos",
   "packageManager": "pnpm@10.28.0",
   "engines": {

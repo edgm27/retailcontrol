@@ -29,6 +29,7 @@ test("accesibilidad: aplicación", async ({ page }) => {
     "/app/productos/importar",
     "/app/lotes",
     "/app/compras",
+    "/app/recepciones/escanear",
     "/app/reportes",
     "/app/reportes?r=existencias",
     "/app/configuracion/usuarios",

@@ -14,7 +14,10 @@ export default async function ReceiptsPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">Recepciones de mercancía</h1>
         {hasPermission(access.role, "purchases.receive") && access.accessMode === "full" && (
-          <Link href="/app/recepciones/nueva" className={buttonVariants()}>Recepción sin orden</Link>
+          <div className="flex flex-wrap gap-2">
+            <Link href="/app/recepciones/escanear" className={buttonVariants()}>Recibir con escáner</Link>
+            <Link href="/app/recepciones/nueva" className={buttonVariants({ variant: "outline" })}>Recepción sin orden</Link>
+          </div>
         )}
       </div>
       {receipts.length === 0 ? <EmptyState title="Sin recepciones" description="Reciba desde una orden de compra aprobada o registre una recepción sin orden." /> : (

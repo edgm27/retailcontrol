@@ -82,3 +82,20 @@ export async function grantSuperadmin(email: string) {
   const { ensurePlatformSuperadmins } = await import("@rc/domain");
   await ensurePlatformSuperadmins([email]);
 }
+
+/** Datos para la recepción con escáner: proveedor y un producto con presentación y códigos de barras. */
+export async function seedScanCatalog(email: string) {
+  const { config } = await import("dotenv");
+  config({ path: path.resolve(process.cwd(), "../../.env"), quiet: true });
+  const { prisma, withContext } = await import("@rc/db");
+  const { addProductBarcode, addProductUnit, createProduct, createSupplier, resolveTenantAccess } = await import("@rc/domain");
+  const user = await prisma.user.findUniqueOrThrow({ where: { email } });
+  const m = await withContext({ userId: user.id }, (tx) => tx.membership.findFirstOrThrow({ where: { userId: user.id } }));
+  const acc = (await resolveTenantAccess(user.id, m.tenantId))!;
+  const actor = { userId: user.id, email, tenantId: m.tenantId, membershipId: acc.membershipId, role: acc.role, branchIds: acc.branchIds };
+  await createSupplier(actor, { name: "Distribuidora E2E" });
+  const leche = await createProduct(actor, { sku: "LECHE-E2E", name: "Leche entera 1 L", requiresExpiry: true });
+  await addProductUnit(actor, leche.id, { code: "CAJA", name: "Caja x12", factorToBase: "12" });
+  await addProductBarcode(actor, leche.id, { code: "17591234567891", unitCode: "CAJA" });
+  await createProduct(actor, { sku: "ARROZ-E2E", name: "Arroz blanco 1 kg" });
+}

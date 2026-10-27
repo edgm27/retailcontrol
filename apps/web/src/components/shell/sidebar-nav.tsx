@@ -18,6 +18,11 @@ function isActive(pathname: string, href: string) {
 
 function NavList({ groups, onNavigate }: { groups: NavGroup[]; onNavigate?: () => void }) {
   const pathname = usePathname();
+  // Solo se resalta la opción más específica (p. ej. «Recibir con escáner» y no también «Recepciones»).
+  const activeHref = groups
+    .flatMap((g) => g.items.map((i) => i.href))
+    .filter((h) => isActive(pathname, h))
+    .sort((a, b) => b.length - a.length)[0];
   return (
     <nav aria-label="Principal" className="grid gap-4">
       {groups.map((g) => (
@@ -25,7 +30,7 @@ function NavList({ groups, onNavigate }: { groups: NavGroup[]; onNavigate?: () =
           <p className="px-3 pb-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-white/55">{g.label}</p>
           <ul className="grid gap-0.5">
             {g.items.map((it) => {
-              const active = isActive(pathname, it.href);
+              const active = it.href === activeHref;
               const Icon = NAV_ICONS[it.icon];
               return (
                 <li key={it.href}>

@@ -2,6 +2,23 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versionado semántico.
 
+## [0.10.0] — 2026-10-27 — Recepción de mercancía con el celular
+
+### Añadido
+- **Recibir con escáner** (Compras → Recibir con escáner, o desde Recepciones): pensado para el celular.
+  - Escaneo del código de barras con la **cámara** (lector nativo del navegador en Android; ZXing en iPhone y otros),
+    con linterna si el teléfono la tiene. También acepta código/SKU escrito o lector USB/Bluetooth.
+  - Por cada producto: cantidad (con botones + / −), unidad o presentación (el código de una caja selecciona la caja),
+    costo sugerido (último costo, convertido a la moneda y presentación), lote (con sugerencia de lotes existentes) y
+    vencimiento; exige lote/vencimiento cuando el producto lo requiere y no acepta mercancía vencida.
+  - Proveedor, almacén, moneda (tasa del día congelada), factura y gastos adicionales.
+  - Código no registrado: buscar el producto por nombre y guardar el código para la próxima vez.
+  - Borrador guardado en el teléfono (no se pierde si se cae la señal) y envío idempotente (un reintento no duplica).
+- Prueba E2E con cámara simulada y pruebas de integración del escaneo (presentaciones, aislamiento, permisos).
+
+### Seguridad
+- `Permissions-Policy` permite la cámara solo para el propio sitio. La imagen se procesa en el teléfono; no se envía ni se guarda.
+
 ## [0.9.0] — 2026-10-27 — Fase 5: reportes, exportaciones y preparación para producción
 
 ### Añadido
